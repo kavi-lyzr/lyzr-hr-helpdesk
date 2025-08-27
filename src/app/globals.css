@@ -14,7 +14,9 @@
   --primary-foreground: oklch(1.0000 0 0);
   --secondary: oklch(0.9683 0.0069 247.8956);
   --secondary-foreground: oklch(0.2077 0.0398 265.7549);
-  --muted: oklch(0.9842 0.0034 247.8575);
+  /* --muted: oklch(0.9842 0.0034 247.8575); */
+  --muted: oklch(0.9458 0.023 288.66);
+  /* --muted: oklch(0.8208 0.101 19.45); */
   --muted-foreground: oklch(0.5544 0.0407 257.4166);
   --accent: oklch(0.9683 0.0069 247.8956);
   --accent-foreground: oklch(0.2077 0.0398 265.7549);
@@ -50,9 +52,10 @@
   --shadow-2xl: 0px 4px 2px 0px hsl(279.1837 47.5728% 79.8039% / 0.25);
   --tracking-normal: normal;
   --spacing: 0.25rem;
-  --primary-gradient-start: #833ab4;
+  /* --primary-gradient-start: #833ab4;
   --primary-gradient-middle: #fd1d1d;
-  --primary-gradient-end: #fcb045;
+  --primary-gradient-end: #fcb045; */
+  /* padding: 0.5rem; */
 }
 
 .dark {
@@ -174,4 +177,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+::selection {
+  @apply bg-primary text-primary-foreground;
 }
