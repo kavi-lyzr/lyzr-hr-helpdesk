@@ -1,0 +1,59 @@
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export type MessageRole = 'user' | 'agent' | 'system' | 'resolver';
+
+export interface ITicketMessage extends Document {
+  _id: string;
+  ticketId: string;
+  role: MessageRole;
+  content: string;
+  userId: string;
+  attachments?: string[]; // Array of file URLs/paths
+  isInternal?: boolean; // For internal notes not visible to ticket creator
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
+  {
+    ticketId: {
+      type: String,
+      ref: 'Ticket',
+      required: [true, 'Ticket ID is required'],
+    },
+    role: {
+      type: String,
+      enum: ['user', 'agent', 'system', 'resolver'],
+      required: [true, 'Message role is required'],
+    },
+    content: {
+      type: String,
+      required: [true, 'Message content is required'],
+      trim: true,
+    },
+    userId: {
+      type: String,
+      ref: 'User',
+      required: [true, 'User ID is required'],
+    },
+    attachments: [{
+      type: String,
+      trim: true,
+    }],
+    isInternal: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Create indexes for better performance
+TicketMessageSchema.index({ ticketId: 1, createdAt: 1 });
+TicketMessageSchema.index({ userId: 1 });
+
+const TicketMessage: Model<ITicketMessage> = mongoose.models?.TicketMessage || mongoose.model<ITicketMessage>('TicketMessage', TicketMessageSchema);
+
+export default TicketMessage;

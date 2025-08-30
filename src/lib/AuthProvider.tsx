@@ -68,6 +68,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 try {
                     const userKeys = await lyzr.getKeysUser();
                     const email = userKeys?.data?.user?.email;
+                    const userName = userKeys?.data?.user?.name;
+
+                    // Create or update user in our database
+                    const response = await fetch('/api/auth/lyzr', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            lyzrUserData: {
+                                id: tokenData[0].user_id,
+                                email: email,
+                                name: userName || 'User',
+                            }
+                        }),
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('User synchronized with database:', result.user);
+                    }
 
                     Cookies.set('user_id', tokenData[0].user_id);
                     Cookies.set('token', tokenData[0].api_key);
