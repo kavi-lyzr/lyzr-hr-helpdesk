@@ -1,9 +1,11 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, User } from "lucide-react";
 import AppSidebar from "./app-sidebar";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export default function SiteHeader() {
   return (
@@ -22,6 +24,7 @@ export default function SiteHeader() {
           </Sheet>
         </div>
         <div className="flex items-center gap-4 ml-auto">
+          <ThemeSwitcher />
           <Button variant="outline" size="icon">
             <User className="h-5 w-5" />
           </Button>
