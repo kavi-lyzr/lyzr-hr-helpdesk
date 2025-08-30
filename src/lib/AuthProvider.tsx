@@ -18,6 +18,8 @@ interface AuthContextType {
     token: string | null;
     email: string | null;
     checkAuth: () => Promise<void>;
+    login: () => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +46,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(null);
         setToken(null);
         setEmail(null);
+    };
+
+    const login = async () => {
+        if (typeof window === 'undefined') return;
+
+        try {
+            const { default: lyzr } = await import('lyzr-agent');
+            
+            // First check if user is already authenticated without triggering login
+            try {
+                const tokenData = await lyzr.getKeys() as unknown as TokenData[];
+                if (tokenData && tokenData[0]) {
+                    // User is already authenticated, redirect to organizations
+                    window.location.href = '/organizations';
+                    return;
+                }
+            } catch (error) {
+                console.log('User not authenticated, will trigger login');
+            }
+
+            // User is not authenticated, trigger the login modal
+            // We need to force the authentication flow
+            await lyzr.logout(); // Ensure clean state
+            
+            // Trigger authentication by attempting to get keys
+            // This should show the login modal
+            await lyzr.getKeys();
+        } catch (error) {
+            console.error('Login failed:', error);
+        }
+    };
+
+    const logout = async () => {
+        if (typeof window === 'undefined') return;
+
+        try {
+            const { default: lyzr } = await import('lyzr-agent');
+            await lyzr.logout();
+            clearAuthData();
+        } catch (error) {
+            console.error('Logout failed:', error);
+            clearAuthData();
+        }
     };
 
     const setAuthData = (userData: TokenData) => {
@@ -122,15 +167,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // Subscribe to auth state changes
                 const unsubscribe = lyzr.onAuthStateChange((isAuthenticated: boolean) => {
                     if (isAuthenticated) {
-                        checkAuth();
+                        checkAuth().then(() => {
+                            // Only redirect if we're on the landing page and user manually triggered login
+                            if (window.location.pathname === '/' && !isLoading) {
+                                window.location.href = '/organizations';
+                            }
+                        });
                     } else {
                         clearAuthData();
                         setIsLoading(false);
                     }
                 });
 
-                // Initial auth check
-                await checkAuth();
+                // Check if user is already authenticated without triggering auth flow
+                try {
+                    const tokenData = await lyzr.getKeys() as unknown as TokenData[];
+                    if (tokenData && tokenData[0]) {
+                        await checkAuth();
+                    } else {
+                        setIsLoading(false);
+                    }
+                } catch (error) {
+                    // User not authenticated, don't trigger auth flow automatically
+                    setIsLoading(false);
+                }
 
                 return () => unsubscribe();
             } catch (err) {
@@ -149,8 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading,
             userId,
             token,
+            email,
             checkAuth,
-            email
+            login,
+            logout
         }}>
             {children}
         </AuthContext.Provider>

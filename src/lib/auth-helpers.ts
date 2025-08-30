@@ -75,13 +75,20 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
 }
 
 /**
- * Get user by ID
+ * Get user by ID (supports both MongoDB ObjectId and Lyzr user ID)
  */
 export async function getUserById(userId: string): Promise<IUser | null> {
   await dbConnect();
   
   try {
-    const user = await User.findById(userId);
+    // First try to find by MongoDB ObjectId (24 character hex string)
+    if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+      const user = await User.findById(userId);
+      if (user) return user;
+    }
+    
+    // If not found or not a valid ObjectId, try finding by lyzrUserId
+    const user = await User.findOne({ lyzrUserId: userId });
     return user;
   } catch (error) {
     console.error('Error fetching user:', error);

@@ -1,4 +1,4 @@
-import { Organization, OrganizationUser, type IOrganization, type IOrganizationUser, type UserRole } from '@/lib/models';
+import { Organization, OrganizationUser, User, type IOrganization, type IOrganizationUser, type UserRole } from '@/lib/models';
 import dbConnect from '@/lib/database';
 
 export interface CreateOrganizationData {
@@ -25,17 +25,26 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
 
     await organization.save();
 
-    // Add the creator as an admin
-    const organizationUser = new OrganizationUser({
-      organizationId: organization._id,
-      email: '', // We'll need to get this from the user
-      userId: data.createdBy,
-      role: 'admin',
-      createdBy: data.createdBy,
-      joinedAt: new Date(),
-    });
-
-    await organizationUser.save();
+    // Add the creator as an admin in the OrganizationUser table
+    try {
+      // Get the user to get their email
+      const user = await User.findById(data.createdBy);
+      if (user) {
+        const organizationUser = new OrganizationUser({
+          organizationId: organization._id,
+          email: user.email,
+          userId: data.createdBy,
+          role: 'admin',
+          createdBy: data.createdBy,
+          joinedAt: new Date(),
+        });
+        
+        await organizationUser.save();
+      }
+    } catch (error) {
+      console.error('Error adding creator to OrganizationUser:', error);
+      // Don't fail the organization creation if this fails
+    }
 
     return organization;
   } catch (error) {

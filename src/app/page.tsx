@@ -1,3 +1,4 @@
+'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { landingPageContent } from "@/lib/config";
 import { Github, Linkedin, Twitter, Bot, Route, Book, Building2, BarChart3, Plug, ArrowRight, Sparkles, Users, Clock, Shield } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { useAuth } from "@/lib/AuthProvider";
 
 const iconMap = {
   bot: Bot,
@@ -16,6 +18,24 @@ const iconMap = {
 };
 
 export default function LandingPage() {
+  const { login, isAuthenticated, isLoading } = useAuth();
+
+  const handleLogin = async () => {
+    if (isAuthenticated) {
+      // If already authenticated, go to organizations
+      window.location.href = '/organizations';
+    } else {
+      // Trigger Lyzr login modal
+      await login();
+    }
+  };
+
+  const getButtonText = () => {
+    if (isLoading) return "Loading...";
+    if (isAuthenticated) return "Go to Dashboard";
+    return landingPageContent.mainAction;
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -36,8 +56,8 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" asChild>
               <a href="#demo">{landingPageContent.secondaryAction}</a>
             </Button>
-            <Button size="sm" className="hidden sm:flex" asChild>
-              <a href="/organizations">{landingPageContent.mainAction}</a>
+            <Button size="sm" className="hidden sm:flex" onClick={handleLogin} disabled={isLoading}>
+              {getButtonText()}
             </Button>
             <ThemeSwitcher />
           </div>
@@ -98,11 +118,11 @@ export default function LandingPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-4 pt-8 animate-fade-in-up delay-300">
-                <Button size="lg" className="text-lg px-8 py-6" asChild>
-                  <a href="/organizations" className="flex items-center gap-2">
-                    {landingPageContent.mainAction}
+                <Button size="lg" className="text-lg px-8 py-6" onClick={handleLogin} disabled={isLoading}>
+                  <span className="flex items-center gap-2">
+                    {getButtonText()}
                     <ArrowRight className="h-5 w-5" />
-                  </a>
+                  </span>
                 </Button>
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6" asChild>
                   <a href="#demo">{landingPageContent.secondaryAction}</a>
@@ -226,11 +246,11 @@ export default function LandingPage() {
                 Join hundreds of organizations already using Lyzr HR Helpdesk to streamline their employee support
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button size="lg" className="text-lg px-8 py-6" asChild>
-                  <a href="/organizations" className="flex items-center gap-2">
-                    Get Started Free
+                <Button size="lg" className="text-lg px-8 py-6" onClick={handleLogin} disabled={isLoading}>
+                  <span className="flex items-center gap-2">
+                    {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
                     <ArrowRight className="h-5 w-5" />
-                  </a>
+                  </span>
                 </Button>
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6" asChild>
                   <a href="#" className="flex items-center gap-2">
