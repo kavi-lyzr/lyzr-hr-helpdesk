@@ -6,6 +6,12 @@ export interface IUser extends Document {
   email: string;
   avatar?: string;
   lyzrUserId?: string; // ID from Lyzr Studio
+  lyzrApiKey?: string; // Encrypted API key from Lyzr
+  lyzrOrganizationId?: string; // Current org ID from Lyzr
+  lyzrPolicyId?: string; // Policy ID from Lyzr  
+  lyzrUsageId?: string; // Usage ID from Lyzr
+  lyzrRole?: string; // Role in Lyzr (e.g., "owner")
+  lyzrCredits?: string; // Available credits
   currentOrganization?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +40,31 @@ const UserSchema: Schema<IUser> = new Schema(
       type: String,
       sparse: true, // Allows null values while maintaining uniqueness for non-null values
       unique: true,
+    },
+    lyzrApiKey: {
+      type: String,
+      default: null,
+      // This will store encrypted API key
+    },
+    lyzrOrganizationId: {
+      type: String,
+      default: null,
+    },
+    lyzrPolicyId: {
+      type: String,
+      default: null,
+    },
+    lyzrUsageId: {
+      type: String,
+      default: null,
+    },
+    lyzrRole: {
+      type: String,
+      default: null,
+    },
+    lyzrCredits: {
+      type: String,
+      default: null,
     },
     currentOrganization: {
       type: String,

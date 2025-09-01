@@ -27,9 +27,10 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
 
     // Add the creator as an admin in the OrganizationUser table
     try {
-      // Get the user to get their email
+      // Get the user to get their email and API key
       const user = await User.findById(data.createdBy);
       if (user) {
+        // Create the organization user entry
         const organizationUser = new OrganizationUser({
           organizationId: organization._id,
           email: user.email,
@@ -40,6 +41,12 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
         });
         
         await organizationUser.save();
+
+        // Store the user's API key in the organization (if available)
+        if (user.lyzrApiKey) {
+          organization.lyzrApiKey = user.lyzrApiKey; // Already encrypted
+          await organization.save();
+        }
       }
     } catch (error) {
       console.error('Error adding creator to OrganizationUser:', error);

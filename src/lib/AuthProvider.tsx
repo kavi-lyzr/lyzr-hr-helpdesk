@@ -9,6 +9,7 @@ export interface TokenData {
     user_id: string;
     organization_id: string;
     usage_id: string;
+    policy_id: string;
 }
 
 interface AuthContextType {
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { default: lyzr } = await import('lyzr-agent');
             const tokenData = await lyzr.getKeys() as unknown as TokenData[];
+            // console.log('tokenData', tokenData);
 
             if (tokenData && tokenData[0]) {
                 try {
@@ -115,8 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const email = userKeys?.data?.user?.email;
                     const userName = userKeys?.data?.user?.name;
 
+                    // console.log('userKeys', userKeys);
+
                     // Create or update user in our database
-                    const response = await fetch('/api/auth/lyzr', {
+                    const response = await fetch('/api/v1/auth/lyzr', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -126,6 +130,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 id: tokenData[0].user_id,
                                 email: email,
                                 name: userName || 'User',
+                                api_key: tokenData[0].api_key,
+                                organization_id: tokenData[0].organization_id,
+                                usage_id: tokenData[0].usage_id,
+                                policy_id: tokenData[0].policy_id,
+                                role: userKeys?.data?.policy?.role,
+                                available_credits: userKeys?.data?.available_credits,
                             }
                         }),
                     });

@@ -1,11 +1,19 @@
 import { User, type IUser } from '@/lib/models';
 import dbConnect from '@/lib/database';
+import { encrypt, decrypt } from '@/lib/encryption';
 
 export interface LyzrUserData {
   id: string;
   email: string;
   name?: string;
   avatar?: string;
+  api_key?: string;
+  organization_id?: string;
+  usage_id?: string;
+  policy_id?: string;
+  user_id?: string;
+  role?: string;
+  available_credits?: string;
 }
 
 /**
@@ -34,6 +42,31 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
         updates.avatar = lyzrUserData.avatar;
       }
 
+      // Update Lyzr-specific data
+      if (lyzrUserData.api_key) {
+        updates.lyzrApiKey = encrypt(lyzrUserData.api_key);
+      }
+      
+      if (lyzrUserData.organization_id) {
+        updates.lyzrOrganizationId = lyzrUserData.organization_id;
+      }
+      
+      if (lyzrUserData.policy_id) {
+        updates.lyzrPolicyId = lyzrUserData.policy_id;
+      }
+      
+      if (lyzrUserData.usage_id) {
+        updates.lyzrUsageId = lyzrUserData.usage_id;
+      }
+      
+      if (lyzrUserData.role) {
+        updates.lyzrRole = lyzrUserData.role;
+      }
+      
+      if (lyzrUserData.available_credits) {
+        updates.lyzrCredits = lyzrUserData.available_credits;
+      }
+
       if (Object.keys(updates).length > 0) {
         user = await User.findByIdAndUpdate(user._id, updates, { new: true });
       }
@@ -45,16 +78,34 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
     user = await User.findOne({ email: lyzrUserData.email });
 
     if (user) {
-      // Link existing user with Lyzr ID
-      user = await User.findByIdAndUpdate(
-        user._id,
-        {
-          lyzrUserId: lyzrUserData.id,
-          name: lyzrUserData.name || user.name,
-          avatar: lyzrUserData.avatar || user.avatar,
-        },
-        { new: true }
-      );
+      // Link existing user with Lyzr ID and update data
+      const updates: any = {
+        lyzrUserId: lyzrUserData.id,
+        name: lyzrUserData.name || user.name,
+        avatar: lyzrUserData.avatar || user.avatar,
+      };
+
+      // Add Lyzr-specific data
+      if (lyzrUserData.api_key) {
+        updates.lyzrApiKey = encrypt(lyzrUserData.api_key);
+      }
+      if (lyzrUserData.organization_id) {
+        updates.lyzrOrganizationId = lyzrUserData.organization_id;
+      }
+      if (lyzrUserData.policy_id) {
+        updates.lyzrPolicyId = lyzrUserData.policy_id;
+      }
+      if (lyzrUserData.usage_id) {
+        updates.lyzrUsageId = lyzrUserData.usage_id;
+      }
+      if (lyzrUserData.role) {
+        updates.lyzrRole = lyzrUserData.role;
+      }
+      if (lyzrUserData.available_credits) {
+        updates.lyzrCredits = lyzrUserData.available_credits;
+      }
+
+      user = await User.findByIdAndUpdate(user._id, updates, { new: true });
       return user!;
     }
 
@@ -64,6 +115,12 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       email: lyzrUserData.email,
       lyzrUserId: lyzrUserData.id,
       avatar: lyzrUserData.avatar,
+      lyzrApiKey: lyzrUserData.api_key ? encrypt(lyzrUserData.api_key) : null,
+      lyzrOrganizationId: lyzrUserData.organization_id,
+      lyzrPolicyId: lyzrUserData.policy_id,
+      lyzrUsageId: lyzrUserData.usage_id,
+      lyzrRole: lyzrUserData.role,
+      lyzrCredits: lyzrUserData.available_credits,
     });
 
     await newUser.save();
@@ -107,6 +164,24 @@ export async function getUserByEmail(email: string): Promise<IUser | null> {
     return user;
   } catch (error) {
     console.error('Error fetching user by email:', error);
+    return null;
+  }
+}
+
+/**
+ * Get user's decrypted API key
+ */
+export async function getUserApiKey(userId: string): Promise<string | null> {
+  await dbConnect();
+  
+  try {
+    const user = await getUserById(userId);
+    if (user && user.lyzrApiKey) {
+      return decrypt(user.lyzrApiKey);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user API key:', error);
     return null;
   }
 }

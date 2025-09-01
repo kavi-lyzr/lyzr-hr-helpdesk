@@ -18,6 +18,7 @@ interface Organization {
   role: string;
   avatar?: string;
   joinedAt: Date;
+  organization?: any; // Full organization object
 }
 
 export default function OrganizationsPage() {
@@ -45,9 +46,10 @@ export default function OrganizationsPage() {
       if (!userId) return;
 
       try {
-        const response = await fetch(`/api/user/organizations?userId=${userId}`);
+        const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
+          console.log('org data', data);
           setOrganizations(data.organizations || []);
         } else {
           console.error('Failed to load organizations');
@@ -72,7 +74,7 @@ export default function OrganizationsPage() {
 
     setIsCreating(true);
     try {
-      const response = await fetch('/api/organizations', {
+      const response = await fetch('/api/v1/organizations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +168,7 @@ export default function OrganizationsPage() {
                 >
                   <CardHeader className="flex flex-row items-center gap-4">
                     <Building className="h-8 w-8 text-primary" />
-                    <CardTitle className="text-lg">{org.name}</CardTitle>
+                    <CardTitle className="text-lg">{org.name || org.organization?.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm text-muted-foreground">
