@@ -61,6 +61,6 @@ const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
 TicketMessageSchema.index({ ticketId: 1, createdAt: 1 });
 TicketMessageSchema.index({ userId: 1 });
 
-const TicketMessage: Model<ITicketMessage> = mongoose.models?.TicketMessage || mongoose.model<ITicketMessage>('TicketMessage', TicketMessageSchema);
+const TicketMessage: Model<ITicketMessage> = mongoose.model<ITicketMessage>('TicketMessage', TicketMessageSchema);
 
 export default TicketMessage;

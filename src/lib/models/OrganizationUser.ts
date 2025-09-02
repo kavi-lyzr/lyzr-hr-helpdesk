@@ -77,6 +77,6 @@ OrganizationUserSchema.index({ organizationId: 1, userId: 1 });
 OrganizationUserSchema.index({ email: 1 });
 OrganizationUserSchema.index({ inviteToken: 1 });
 
-const OrganizationUser: Model<IOrganizationUser> = mongoose.models?.OrganizationUser || mongoose.model<IOrganizationUser>('OrganizationUser', OrganizationUserSchema);
+const OrganizationUser: Model<IOrganizationUser> = mongoose.model<IOrganizationUser>('OrganizationUser', OrganizationUserSchema);
 
 export default OrganizationUser;

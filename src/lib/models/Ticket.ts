@@ -141,6 +141,6 @@ TicketSchema.index({ organizationId: 1, assignedTo: 1 });
 TicketSchema.index({ organizationId: 1, department: 1 });
 TicketSchema.index({ createdAt: -1 });
 
-const Ticket: Model<ITicket> = mongoose.models?.Ticket || mongoose.model<ITicket>('Ticket', TicketSchema);
+const Ticket: Model<ITicket> = mongoose.model<ITicket>('Ticket', TicketSchema);
 
 export default Ticket;

@@ -93,6 +93,6 @@ KnowledgeBaseSchema.index({ organizationId: 1, tags: 1 });
 KnowledgeBaseSchema.index({ fileId: 1 });
 KnowledgeBaseSchema.index({ uploadedBy: 1 });
 
-const KnowledgeBase: Model<IKnowledgeBase> = mongoose.models?.KnowledgeBase || mongoose.model<IKnowledgeBase>('KnowledgeBase', KnowledgeBaseSchema);
+const KnowledgeBase: Model<IKnowledgeBase> = mongoose.model<IKnowledgeBase>('KnowledgeBase', KnowledgeBaseSchema);
 
 export default KnowledgeBase;

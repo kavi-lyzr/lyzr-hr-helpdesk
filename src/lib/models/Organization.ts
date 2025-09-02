@@ -54,6 +54,6 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
 OrganizationSchema.index({ name: 1 });
 OrganizationSchema.index({ createdBy: 1 });
 
-const Organization: Model<IOrganization> = mongoose.models?.Organization || mongoose.model<IOrganization>('Organization', OrganizationSchema);
+const Organization: Model<IOrganization> = mongoose.model<IOrganization>('Organization', OrganizationSchema);
 
 export default Organization;

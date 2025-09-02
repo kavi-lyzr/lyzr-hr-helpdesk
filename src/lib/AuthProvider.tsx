@@ -33,6 +33,15 @@ export function useAuth() {
     return context;
 }
 
+// export async function toggleAppVisibility(visibility: boolean) {
+//     const { default: lyzr } = await import('lyzr-agent');
+//     if (visibility) {
+//         lyzr.showAppContent();
+//     } else {
+//         lyzr.hideAppContent();
+//     }
+// }
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);

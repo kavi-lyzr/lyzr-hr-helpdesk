@@ -45,6 +45,8 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       // Update Lyzr-specific data
       if (lyzrUserData.api_key) {
         updates.lyzrApiKey = encrypt(lyzrUserData.api_key);
+        // console.log('lyzrUserData.api_key', lyzrUserData.api_key);
+        // console.log('updates.lyzrApiKey', updates.lyzrApiKey);
       }
       
       if (lyzrUserData.organization_id) {
@@ -71,6 +73,7 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
         user = await User.findByIdAndUpdate(user._id, updates, { new: true });
       }
       
+      // console.log('updated user', user);
       return user!;
     }
 
@@ -88,6 +91,8 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       // Add Lyzr-specific data
       if (lyzrUserData.api_key) {
         updates.lyzrApiKey = encrypt(lyzrUserData.api_key);
+        // console.log('2 lyzrUserData.api_key', lyzrUserData.api_key);
+        // console.log('2 updates.lyzrApiKey', updates.lyzrApiKey);
       }
       if (lyzrUserData.organization_id) {
         updates.lyzrOrganizationId = lyzrUserData.organization_id;
@@ -106,6 +111,7 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       }
 
       user = await User.findByIdAndUpdate(user._id, updates, { new: true });
+      // console.log('2 updated user', user);
       return user!;
     }
 
@@ -122,6 +128,9 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       lyzrRole: lyzrUserData.role,
       lyzrCredits: lyzrUserData.available_credits,
     });
+
+    // console.log('3 newUser', newUser);
+    // console.log('3 newUser.lyzrApiKey', newUser.lyzrApiKey);
 
     await newUser.save();
     return newUser;
