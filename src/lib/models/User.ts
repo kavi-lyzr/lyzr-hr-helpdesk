@@ -1,4 +1,5 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IOrganization } from './Organization';
 
 export interface IUser extends Document {
   _id: string;
@@ -12,7 +13,7 @@ export interface IUser extends Document {
   lyzrUsageId?: string; // Usage ID from Lyzr
   lyzrRole?: string; // Role in Lyzr (e.g., "owner")
   lyzrCredits?: string; // Available credits
-  currentOrganization?: string;
+  currentOrganization?: Schema.Types.ObjectId | IOrganization;
   schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -68,7 +69,7 @@ const UserSchema: Schema<IUser> = new Schema(
       default: null,
     },
     currentOrganization: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Organization',
       default: null,
     },

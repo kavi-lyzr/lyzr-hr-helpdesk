@@ -1,4 +1,6 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IOrganization } from './Organization';
+import { IUser } from './User';
 
 export type FileType = 'pdf' | 'docx' | 'txt' | 'url';
 
@@ -10,8 +12,8 @@ export interface IKnowledgeBase extends Document {
   fileType: FileType;
   fileUrl?: string; // For URL type or file storage
   fileSize?: number; // In bytes
-  organizationId: string;
-  uploadedBy: string;
+  organizationId: Schema.Types.ObjectId | IOrganization;
+  uploadedBy: Schema.Types.ObjectId | IUser;
   isActive: boolean;
   tags?: string[];
   description?: string;
@@ -52,12 +54,12 @@ const KnowledgeBaseSchema: Schema<IKnowledgeBase> = new Schema(
       min: [0, 'File size cannot be negative'],
     },
     organizationId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Organization',
       required: [true, 'Organization ID is required'],
     },
     uploadedBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Uploaded by is required'],
     },

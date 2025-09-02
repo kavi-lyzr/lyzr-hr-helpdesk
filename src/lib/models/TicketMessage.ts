@@ -1,13 +1,15 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { ITicket } from './Ticket';
+import { IUser } from './User';
 
 export type MessageRole = 'user' | 'agent' | 'system' | 'resolver';
 
 export interface ITicketMessage extends Document {
   _id: string;
-  ticketId: string;
+  ticketId: Schema.Types.ObjectId | ITicket;
   role: MessageRole;
   content: string;
-  userId: string;
+  userId: Schema.Types.ObjectId | IUser;
   attachments?: string[]; // Array of file URLs/paths
   isInternal?: boolean; // For internal notes not visible to ticket creator
   schemaVersion: number;
@@ -18,7 +20,7 @@ export interface ITicketMessage extends Document {
 const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
   {
     ticketId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Ticket',
       required: [true, 'Ticket ID is required'],
     },
@@ -33,7 +35,7 @@ const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
       trim: true,
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'User ID is required'],
     },

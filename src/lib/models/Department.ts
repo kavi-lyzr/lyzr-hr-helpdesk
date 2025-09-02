@@ -1,9 +1,10 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IOrganization } from './Organization';
 
 export interface IDepartment extends Document {
   _id: string;
   name: string;
-  organizationId: string;
+  organizationId: Schema.Types.ObjectId | IOrganization;
   description?: string;
   schemaVersion: number;
   createdAt: Date;
@@ -19,7 +20,7 @@ const DepartmentSchema: Schema<IDepartment> = new Schema(
       maxlength: [100, 'Department name cannot exceed 100 characters'],
     },
     organizationId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Organization',
       required: [true, 'Organization ID is required'],
     },

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OrganizationUser, Organization, User } from '@/lib/models';
+import { OrganizationUser, Organization } from '@/lib/models';
 import dbConnect from '@/lib/database';
 import { getUserById } from '@/lib/auth-helpers';
+import { IOrganization } from '@/lib/models/Organization';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Get all organizations where the user is a member (using MongoDB _id)
     const organizationUsers = await OrganizationUser.find({ 
       userId: mongoUserId 
-    }).populate('organizationId');
+    }).populate<{ organizationId: IOrganization }>('organizationId');
 
     // Get all organizations created by the user (using MongoDB _id)
     const createdOrganizations = await Organization.find({ 

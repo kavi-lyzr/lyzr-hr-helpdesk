@@ -1,14 +1,16 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IOrganization } from './Organization';
+import { IUser } from './User';
 
 export type UserRole = 'employee' | 'resolver' | 'manager' | 'admin';
 
 export interface IOrganizationUser extends Document {
   _id: string;
-  organizationId: string;
+  organizationId: Schema.Types.ObjectId | IOrganization;
   email: string;
-  userId?: string; // null if user hasn't accepted invitation yet
+  userId?: Schema.Types.ObjectId | IUser;
   role: UserRole;
-  createdBy: string;
+  createdBy: Schema.Types.ObjectId | IUser;
   inviteToken?: string; // For invitation flow
   invitedAt?: Date;
   joinedAt?: Date;
@@ -20,7 +22,7 @@ export interface IOrganizationUser extends Document {
 const OrganizationUserSchema: Schema<IOrganizationUser> = new Schema(
   {
     organizationId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Organization',
       required: [true, 'Organization ID is required'],
     },
@@ -32,7 +34,7 @@ const OrganizationUserSchema: Schema<IOrganizationUser> = new Schema(
       match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email'],
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       default: null,
     },
@@ -43,7 +45,7 @@ const OrganizationUserSchema: Schema<IOrganizationUser> = new Schema(
       default: 'employee',
     },
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Created by is required'],
     },

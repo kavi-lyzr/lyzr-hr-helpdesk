@@ -1,11 +1,12 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IUser } from './User';
 
 export interface IOrganization extends Document {
   _id: string;
   name: string;
   lyzrApiKey?: string; // Encrypted API key for Lyzr integration
   avatar?: string;
-  createdBy: string;
+  createdBy: Schema.Types.ObjectId | IUser;
   systemInstruction?: string;
   schemaVersion: number;
   createdAt: Date;
@@ -30,7 +31,7 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
       default: null,
     },
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Created by is required'],
     },

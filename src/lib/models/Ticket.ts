@@ -1,4 +1,7 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { IUser } from './User';
+import { IOrganization } from './Organization';
+import { IDepartment } from './Department';
 
 export type TicketStatus = 'open' | 'in_progress' | 'pending_information' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -9,12 +12,12 @@ export interface ITicket extends Document {
   title: string;
   description: string;
   category?: string;
-  department?: string;
+  department?: Schema.Types.ObjectId | IDepartment;
   priority: TicketPriority;
   status: TicketStatus;
-  assignedTo: string[]; // Array of user IDs
-  createdBy: string;
-  organizationId: string;
+  assignedTo: Schema.Types.ObjectId[] | IUser[]; // Array of user IDs
+  createdBy: Schema.Types.ObjectId | IUser;
+  organizationId: Schema.Types.ObjectId | IOrganization;
   tags?: string[];
   dueDate?: Date;
   resolvedAt?: Date;
@@ -48,7 +51,7 @@ const TicketSchema: Schema<ITicket> = new Schema(
       maxlength: [100, 'Category cannot exceed 100 characters'],
     },
     department: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Department',
       default: null,
     },
@@ -65,16 +68,16 @@ const TicketSchema: Schema<ITicket> = new Schema(
       default: 'open',
     },
     assignedTo: [{
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
     }],
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Created by is required'],
     },
     organizationId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Organization',
       required: [true, 'Organization ID is required'],
     },

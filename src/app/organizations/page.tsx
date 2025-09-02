@@ -114,7 +114,7 @@ export default function OrganizationsPage() {
 
   const handleOrganizationSelect = (orgId: string) => {
     // Update user's current organization and navigate to dashboard
-    router.push(`/dashboard?org=${orgId}`);
+    router.push(`/dashboard/ai-assistant?org=${orgId}`);
   };
 
   const handleLogout = async () => {
