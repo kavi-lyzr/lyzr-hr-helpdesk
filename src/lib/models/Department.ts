@@ -5,6 +5,7 @@ export interface IDepartment extends Document {
   name: string;
   organizationId: string;
   description?: string;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,10 @@ const DepartmentSchema: Schema<IDepartment> = new Schema(
       type: String,
       trim: true,
       maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

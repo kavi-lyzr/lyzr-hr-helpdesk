@@ -7,6 +7,7 @@ export interface IOrganization extends Document {
   avatar?: string;
   createdBy: string;
   systemInstruction?: string;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +38,10 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
       type: String,
       default: 'You are a helpful HR assistant. Provide accurate and professional responses to employee queries.',
       maxlength: [1000, 'System instruction cannot exceed 1000 characters'],
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

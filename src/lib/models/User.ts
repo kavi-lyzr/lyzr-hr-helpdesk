@@ -13,6 +13,7 @@ export interface IUser extends Document {
   lyzrRole?: string; // Role in Lyzr (e.g., "owner")
   lyzrCredits?: string; // Available credits
   currentOrganization?: string;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +71,10 @@ const UserSchema: Schema<IUser> = new Schema(
       type: String,
       ref: 'Organization',
       default: null,
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

@@ -9,37 +9,52 @@ Lyzr HR Helpdesk is a comprehensive AI-powered HR support platform that enables 
 - **Frontend**: Next.js 15, TypeScript, React 19
 - **UI Components**: shadcn/ui, Tailwind CSS v4
 - **Database**: MongoDB with Mongoose ODM
-- **Authentication**: Lyzr Studio Integration
+- **Authentication**: Lyzr Studio Integration with encrypted API key storage
+- **Security**: AES-256-CBC encryption, API middleware
 - **State Management**: React Context API
-- **Styling**: Tailwind CSS with custom design system
+- **Styling**: Tailwind CSS with custom design system and gradient effects
+- **API**: Versioned REST API (v1) with comprehensive error handling
 
 ## Project Structure
 
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── api/                      # API Routes
+│   ├── api/v1/                   # Versioned API Routes
 │   │   ├── auth/lyzr/           # Lyzr authentication endpoint
-│   │   └── user/organizations/   # User organizations endpoint
-│   ├── dashboard/               # Dashboard pages
-│   │   ├── ai-assistant/
-│   │   ├── knowledge-base/
-│   │   ├── organization/
-│   │   ├── settings/
-│   │   └── tickets/
+│   │   ├── organizations/       # Organization management
+│   │   └── user/organizations/  # User organizations endpoint
+│   ├── dashboard/               # Dashboard pages with layout
+│   │   ├── ai-assistant/        # AI chat interface
+│   │   ├── knowledge-base/      # Document management
+│   │   ├── organization/        # Org management (admin)
+│   │   ├── settings/           # User settings
+│   │   ├── tickets/            # Ticket management
+│   │   └── layout.tsx          # Dashboard layout with sidebar
 │   ├── organizations/           # Organization selection page
-│   └── page.tsx                 # Landing page
+│   └── page.tsx                 # Enhanced landing page
 ├── components/                  # Reusable UI components
-│   └── ui/                     # shadcn/ui components
+│   ├── ui/                     # shadcn/ui base components
+│   ├── app-sidebar.tsx         # Supabase-style sidebar
+│   ├── site-header.tsx         # Enhanced header with org picker
+│   ├── chat-input.tsx          # AI chat input component
+│   ├── chat-empty-state.tsx    # Chat welcome screen
+│   ├── starter-questions.tsx   # HR-focused starter questions
+│   └── gradient-manager.tsx    # Background gradient controller
 ├── lib/                        # Utilities and configurations
-│   ├── models/                 # Mongoose models
-│   ├── AuthProvider.tsx        # Authentication context
-│   ├── auth-helpers.ts         # Authentication utilities
+│   ├── models/                 # Enhanced Mongoose models
+│   ├── middleware/             # API security middleware
+│   ├── AuthProvider.tsx        # Enhanced authentication context
+│   ├── auth-helpers.ts         # User management utilities
+│   ├── organization-helpers.ts # Organization utilities
+│   ├── encryption.ts           # API key encryption
 │   ├── config.ts              # App configuration
 │   ├── database.ts            # MongoDB connection
-│   ├── organization-helpers.ts # Organization utilities
 │   └── utils.ts               # General utilities
-└── hooks/                      # Custom React hooks
+├── hooks/                      # Custom React hooks
+└── public/                     # Static assets
+    ├── lyzr.svg               # Lyzr logo
+    └── noise.svg              # Background texture
 ```
 
 ## Database Schema
@@ -52,7 +67,14 @@ interface IUser {
   email: string;
   avatar?: string;
   lyzrUserId?: string;           // ID from Lyzr Studio
+  lyzrApiKey?: string;           // Encrypted API key from Lyzr
+  lyzrOrganizationId?: string;   // Current org ID from Lyzr
+  lyzrPolicyId?: string;         // Policy ID from Lyzr  
+  lyzrUsageId?: string;          // Usage ID from Lyzr
+  lyzrRole?: string;             // Role in Lyzr (e.g., "owner")
+  lyzrCredits?: string;          // Available credits
   currentOrganization?: string;  // Current active organization
+  schemaVersion: number;         // For future migrations
   createdAt: Date;
   updatedAt: Date;
 }
@@ -202,18 +224,18 @@ Based on user role in the organization:
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/lyzr` - Create/update user from Lyzr authentication
+### Authentication (v1)
+- `POST /api/v1/auth/lyzr` - Create/update user from Lyzr authentication with full data sync
 
-### User Management
-- `GET /api/user/organizations?userId={id}` - Get user's organizations
+### User Management (v1)
+- `GET /api/v1/user/organizations?userId={id}` - Get user's organizations with role info
 
-### Organizations (Planned)
-- `POST /api/organizations` - Create new organization
-- `GET /api/organizations/{id}` - Get organization details
-- `PUT /api/organizations/{id}` - Update organization
-- `POST /api/organizations/{id}/members` - Add member to organization
-- `PUT /api/organizations/{id}/members/{userId}` - Update member role
+### Organizations (v1)
+- `POST /api/v1/organizations` - Create new organization with automatic API key integration
+- `GET /api/v1/organizations/{id}` - Get organization details (Planned)
+- `PUT /api/v1/organizations/{id}` - Update organization (Planned)
+- `POST /api/v1/organizations/{id}/members` - Add member to organization (Planned)
+- `PUT /api/v1/organizations/{id}/members/{userId}` - Update member role (Planned)
 
 ### Tickets (Planned)
 - `GET /api/tickets` - List tickets (filtered by organization and role)
@@ -236,12 +258,41 @@ MONGODB_URI=mongodb://localhost:27017/lyzr-hr-helpdesk
 # Lyzr Configuration  
 NEXT_PUBLIC_LYZR_PUBLIC_KEY=your_lyzr_public_key_here
 
+# Security Configuration
+ENCRYPTION_KEY=your-32-character-encryption-key-here
+INTERNAL_API_KEY=your-internal-api-key-for-securing-endpoints
+
 # App Configuration
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_nextauth_secret_here
 ```
 
 ## Design System
+
+### Enhanced UI Components
+
+#### **Sidebar (Supabase-style)**
+- Lyzr logo with "HR Helpdesk" branding
+- Organization picker with role badges
+- Role-based navigation filtering
+- User menu with avatar and profile access
+- Smooth hover states and transitions
+- Backdrop blur effects for modern look
+
+#### **Header**
+- Responsive organization picker for mobile
+- User avatar with dropdown menu
+- Theme switcher integration
+- Consistent branding across devices
+
+#### **AI Assistant Interface**
+- Perplexity OSS inspired chat design
+- Gradient background with noise texture
+- Animated gradient that fades during conversation
+- Starter questions for HR topics
+- Auto-resizing chat input
+- Message bubbles with timestamps
+- Loading indicators with bounce animation
 
 ### Typography Scale
 - **Page Title**: `text-3xl md:text-4xl font-bold`
@@ -256,31 +307,72 @@ NEXTAUTH_SECRET=your_nextauth_secret_here
 - **Element Spacing**: `gap-4` or `gap-6`
 - **Section Spacing**: `py-8` or `py-12`
 
+### Visual Effects
+- **Gradient Background**: Subtle animated gradient using CSS variables
+- **Backdrop Blur**: Modern glass-morphism effects
+- **Noise Texture**: SVG-based subtle texture overlay
+- **Smooth Transitions**: 200-300ms duration for hover states
+- **Border Transparency**: `border-border/50` for softer edges
+
 ### Component Usage
-- **Cards**: For grouping related information
-- **Tables**: For structured data display
-- **Forms**: Always wrapped in Cards with consistent spacing
-- **Buttons**: Primary actions solid, secondary actions outline
-- **Navigation**: App sidebar with collapsible sections
+- **Cards**: Glassmorphism with backdrop blur and subtle borders
+- **Buttons**: Enhanced with proper focus states and animations
+- **Navigation**: Sticky sidebar with role-based item filtering
+- **Chat Interface**: Modern chat bubbles with proper message threading
+- **Forms**: Clean inputs with subtle background colors
 
 ## Security Considerations
 
-1. **Authentication**: Integrated with Lyzr Studio for secure authentication
-2. **Authorization**: Role-based access control at organization level
-3. **Data Isolation**: All data scoped to organization context
-4. **API Security**: User authentication required for all API endpoints
-5. **Database**: Proper indexing and query optimization
-6. **Encryption**: Sensitive data like API keys encrypted at rest
+1. **Authentication**: Integrated with Lyzr Studio for secure authentication with full data sync
+2. **Authorization**: Role-based access control at organization level with UI filtering
+3. **Data Isolation**: All data scoped to organization context with proper user validation
+4. **API Security**: 
+   - Internal API key protection for sensitive endpoints
+   - User validation middleware
+   - Request authentication for all operations
+5. **Encryption**: 
+   - AES-256-CBC encryption for API keys
+   - Environment-based encryption keys
+   - Secure key derivation functions
+6. **Database**: 
+   - Proper indexing and query optimization
+   - Schema versioning for future migrations
+   - MongoDB ObjectId vs Lyzr ID handling
+7. **API Versioning**: v1 API structure for future compatibility
+
+## Recent Enhancements (v1.1)
+
+### ✅ **Dashboard Polish**
+- **Supabase-style Sidebar**: Modern design with Lyzr branding
+- **Role-based Navigation**: Dynamic menu based on user permissions  
+- **Organization Switching**: Seamless org switching with URL state
+- **Enhanced Header**: Responsive design with mobile support
+
+### ✅ **AI Assistant Polish**
+- **Perplexity-inspired Interface**: Clean chat design with gradients
+- **Background Effects**: Animated gradient with noise texture
+- **Interactive Elements**: Starter questions for HR topics
+- **Message Threading**: Proper chat bubbles with timestamps
+- **Loading States**: Smooth animations and feedback
+
+### ✅ **Security & Performance**
+- **API Key Encryption**: Secure storage of Lyzr API keys
+- **Enhanced Authentication**: Full Lyzr data synchronization
+- **API Versioning**: v1 structure for future compatibility
+- **Optimized Queries**: Improved organization lookup and caching
 
 ## Future Enhancements
 
-1. **Real-time Updates**: WebSocket integration for live ticket updates
-2. **Advanced Analytics**: Reporting dashboard with metrics
-3. **Email Integration**: Automatic email notifications
-4. **Mobile App**: React Native companion app
-5. **Third-party Integrations**: Slack, Microsoft Teams, etc.
-6. **Advanced AI Features**: Sentiment analysis, auto-categorization
-7. **Multi-language Support**: Internationalization
+1. **AI Integration**: Connect chat interface with Lyzr API for real responses
+2. **Real-time Updates**: WebSocket integration for live ticket updates
+3. **Advanced Analytics**: Reporting dashboard with metrics
+4. **Email Integration**: Automatic email notifications
+5. **Mobile App**: React Native companion app
+6. **Third-party Integrations**: Slack, Microsoft Teams, etc.
+7. **Advanced AI Features**: Sentiment analysis, auto-categorization
+8. **Multi-language Support**: Internationalization
+9. **Knowledge Base**: Document upload and AI-powered search
+10. **Ticket System**: Complete ticket workflow implementation
 
 ## Getting Started
 

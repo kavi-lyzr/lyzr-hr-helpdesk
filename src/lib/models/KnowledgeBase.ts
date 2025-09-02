@@ -15,6 +15,7 @@ export interface IKnowledgeBase extends Document {
   isActive: boolean;
   tags?: string[];
   description?: string;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +74,10 @@ const KnowledgeBaseSchema: Schema<IKnowledgeBase> = new Schema(
       type: String,
       trim: true,
       maxlength: [1000, 'Description cannot exceed 1000 characters'],
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

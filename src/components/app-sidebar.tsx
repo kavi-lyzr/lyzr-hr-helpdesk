@@ -2,12 +2,22 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bot, Ticket, Users, FileText, Settings, ChevronDown, Plus, ChevronsLeft, ChevronsRight, Building } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bot, Ticket, Users, FileText, Settings, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/AuthProvider";
+import Image from "next/image";
+
+interface Organization {
+  _id: string;
+  name: string;
+  role: string;
+  organization?: any;
+}
 
 const navItems = [
   {
@@ -15,100 +25,233 @@ const navItems = [
     label: 'AI Assistant',
     icon: Bot,
     href: '/dashboard/ai-assistant',
+    roles: ['employee', 'resolver', 'manager', 'admin'],
   },
   {
     id: 'tickets',
     label: 'Tickets',
     icon: Ticket,
     href: '/dashboard/tickets',
+    roles: ['employee', 'resolver', 'manager', 'admin'],
   },
   {
     id: 'organization',
     label: 'Organization',
     icon: Users,
     href: '/dashboard/organization',
+    roles: ['manager', 'admin'],
   },
   {
     id: 'knowledge-base',
     label: 'Knowledge Base',
     icon: FileText,
     href: '/dashboard/knowledge-base',
+    roles: ['manager', 'admin'],
   },
   {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
     href: '/dashboard/settings',
+    roles: ['admin'],
   },
 ];
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, userId, email } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [userRole, setUserRole] = useState<string>('employee');
+
+  // Load current organization from URL params
+  useEffect(() => {
+    const loadCurrentOrg = async () => {
+      if (!userId) return;
+
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orgId = urlParams.get('org');
+        
+        if (orgId) {
+          const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
+          if (response.ok) {
+            const data = await response.json();
+            const org = data.organizations.find((o: Organization) => o._id === orgId);
+            if (org) {
+              setCurrentOrg(org);
+              setUserRole(org.role);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading current organization:', error);
+      }
+    };
+
+    if (userId) {
+      loadCurrentOrg();
+    }
+  }, [userId]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
+  const filteredNavItems = navItems.filter(item => 
+    item.roles.includes(userRole)
+  );
 
   return (
-    <aside className={`hidden lg:flex lg:flex-col border-r bg-muted/40 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="h-16 border-b flex items-center px-4 justify-between">
-            {!isCollapsed && <div className="font-bold text-xl">Lyzr</div>}
-            <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)}>
-                {isCollapsed ? <ChevronsRight /> : <ChevronsLeft />}
-            </Button>
-        </div>
-      <div className="h-16 border-b flex items-center px-4">
-        {!isCollapsed ? (
-            <Select>
-            <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Organization" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="lyzr-corp">Lyzr Corp</SelectItem>
-                <SelectItem value="payu">PayU</SelectItem>
-                <div className="border-t my-1" />
-                <Button variant="ghost" className="w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Organization
-                </Button>
-            </SelectContent>
-            </Select>
-        ) : (
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <Building className="h-5 w-5" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                        <p>Select Organization</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+    <aside className={`hidden lg:flex lg:flex-col border-r bg-background/60 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+      {/* Header with Logo and Collapse Button */}
+      <div className="h-16 border-b border-border/50 flex items-center px-4 justify-between">
+        {!isCollapsed && (
+          <div className="flex items-center gap-3">
+            <Image
+              src="/lyzr.svg"
+              alt="Lyzr"
+              width={24}
+              height={24}
+              className="rounded"
+            />
+            <div>
+              <h1 className="font-semibold text-sm text-foreground">Lyzr HR</h1>
+              <p className="text-xs text-muted-foreground">Helpdesk</p>
+            </div>
+          </div>
         )}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8 p-0"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
-      <nav className="flex-1 space-y-2 px-2 py-6">
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3">
         <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.id}>
+          {filteredNavItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <li key={item.id}>
                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link href={item.href}>
-                                <Button
-                                variant={pathname.startsWith(item.href) ? "default" : "ghost"}
-                                className={`w-full flex ${isCollapsed ? 'justify-center' : 'justify-start'}`}
-                                >
-                                <item.icon className={`h-5 w-5 ${!isCollapsed && 'mr-3'}`} />
-                                {!isCollapsed && item.label}
-                                </Button>
-                            </Link>
-                        </TooltipTrigger>
-                        {isCollapsed && <TooltipContent side="right"><p>{item.label}</p></TooltipContent>}
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link href={`${item.href}?org=${currentOrg?._id || ''}`}>
+                        <Button
+                          variant="ghost"
+                          className={`w-full h-9 transition-colors ${
+                            isCollapsed ? 'justify-center px-0' : 'justify-start px-3'
+                          } ${
+                            isActive 
+                              ? 'bg-accent text-accent-foreground' 
+                              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                          }`}
+                        >
+                          <item.icon className={`h-4 w-4 ${!isCollapsed && 'mr-3'}`} />
+                          {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    {isCollapsed && (
+                      <TooltipContent side="right">
+                        <p>{item.label}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 </TooltipProvider>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </nav>
+
+      {/* User Menu */}
+      <div className="p-3 border-t border-border/50">
+        {isCollapsed ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full h-10 p-0">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="" />
+                        <AvatarFallback className="text-xs bg-muted">
+                          {email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium text-foreground">
+                        {email?.split('@')[0] || 'User'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {currentOrg?.role || 'Member'}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>User Menu</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start h-10 px-2">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-xs bg-muted">
+                      {email?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {currentOrg?.role || 'Member'}
+                    </p>
+                  </div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
+                <User className="mr-2 h-4 w-4" />
+                Profile Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </aside>
   );
 }

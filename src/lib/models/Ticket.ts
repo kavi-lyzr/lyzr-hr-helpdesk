@@ -19,6 +19,7 @@ export interface ITicket extends Document {
   dueDate?: Date;
   resolvedAt?: Date;
   closedAt?: Date;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,6 +93,10 @@ const TicketSchema: Schema<ITicket> = new Schema(
     closedAt: {
       type: Date,
       default: null,
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

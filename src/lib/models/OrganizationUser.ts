@@ -12,6 +12,7 @@ export interface IOrganizationUser extends Document {
   inviteToken?: string; // For invitation flow
   invitedAt?: Date;
   joinedAt?: Date;
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +58,10 @@ const OrganizationUserSchema: Schema<IOrganizationUser> = new Schema(
     joinedAt: {
       type: Date,
       default: null,
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {

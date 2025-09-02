@@ -10,6 +10,7 @@ export interface ITicketMessage extends Document {
   userId: string;
   attachments?: string[]; // Array of file URLs/paths
   isInternal?: boolean; // For internal notes not visible to ticket creator
+  schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +44,10 @@ const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
     isInternal: {
       type: Boolean,
       default: false,
+    },
+    schemaVersion: {
+      type: Number,
+      default: 1,
     },
   },
   {
