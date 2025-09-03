@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useCallback } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { ChatEmptyState } from "@/components/chat-empty-state";
 import { StarterQuestionsList } from "@/components/starter-questions";
@@ -28,23 +28,92 @@ export default function AIAssistantPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const { userId, isAuthenticated } = useAuth();
 
-  // Fetch user data including current organization
+  // Load conversation from localStorage
+  useEffect(() => {
+    if (userData?.currentOrganization) {
+      const storageKey = `chat_session_${userData.currentOrganization}`;
+      const storedSession = localStorage.getItem(storageKey);
+      
+      if (storedSession) {
+        try {
+          const { sessionId: storedSessionId, messages: storedMessages } = JSON.parse(storedSession);
+          setSessionId(storedSessionId);
+          setMessages(storedMessages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          })));
+        } catch (error) {
+          console.error('Error loading stored conversation:', error);
+        }
+      }
+    }
+  }, [userData?.currentOrganization]);
+
+  // Save conversation to localStorage whenever messages change
+  useEffect(() => {
+    if (userData?.currentOrganization && messages.length > 0) {
+      const storageKey = `chat_session_${userData.currentOrganization}`;
+      const sessionData = {
+        sessionId,
+        messages: messages.map(msg => ({
+          ...msg,
+          timestamp: msg.timestamp.toISOString()
+        })),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(storageKey, JSON.stringify(sessionData));
+    }
+  }, [messages, sessionId, userData?.currentOrganization]);
+
+  // Fetch user data and get current organization from URL
   useEffect(() => {
     const fetchUserData = async () => {
       if (!userId || !isAuthenticated) return;
 
       try {
+        // Get current organization from URL parameter (like header and sidebar do)
+        const urlParams = new URLSearchParams(window.location.search);
+        const orgId = urlParams.get('org');
+
         const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
-          // For now, we'll set the user data structure needed
-          // This should be enhanced to properly get current organization
+          
+          let currentOrgId = '';
+          let userName = data.user?.name || 'User';
+          let userEmail = data.user?.email || '';
+
+          // Use organization from URL parameter if available
+          if (orgId && data.organizations) {
+            const org = data.organizations.find((o: any) => o._id === orgId);
+            if (org) {
+              currentOrgId = orgId;
+              console.log('Using current organization from URL:', org.name);
+            } else {
+              console.warn('Organization from URL not found in user organizations');
+            }
+          }
+          
+          // Fallback to first organization if no URL org or org not found
+          if (!currentOrgId && data.organizations?.length > 0) {
+            currentOrgId = data.organizations[0]._id;
+            console.log('Falling back to first organization:', data.organizations[0].name);
+          }
+
+          if (!currentOrgId) {
+            console.error('No organizations found for user');
+            return;
+          }
+
           setUserData({
             _id: userId,
-            currentOrganization: data.organizations?.[0]?._id || '', // Use first org for now
-            name: data.user?.name || 'User',
-            email: data.user?.email || '',
+            currentOrganization: currentOrgId,
+            name: userName,
+            email: userEmail,
           });
+          
+          console.log('AI Assistant initialized with organization:', currentOrgId);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -53,6 +122,49 @@ export default function AIAssistantPage() {
 
     fetchUserData();
   }, [userId, isAuthenticated]);
+
+  // Clear conversation function
+  const clearConversation = useCallback(() => {
+    if (userData?.currentOrganization) {
+      const storageKey = `chat_session_${userData.currentOrganization}`;
+      localStorage.removeItem(storageKey);
+      setMessages([]);
+      setSessionId(null);
+      console.log('Conversation cleared for organization:', userData.currentOrganization);
+    }
+  }, [userData?.currentOrganization]);
+
+  // Listen for organization changes in URL (when user switches in header)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newOrgId = urlParams.get('org');
+      
+      if (newOrgId && userData && newOrgId !== userData.currentOrganization) {
+        console.log('Organization changed via URL, updating AI assistant:', newOrgId);
+        
+        // Clear current conversation when switching organizations
+        clearConversation();
+        
+        // Update userData with new organization
+        setUserData({
+          ...userData,
+          currentOrganization: newOrgId
+        });
+      }
+    };
+
+    // Listen for URL changes (when user switches org in header)
+    window.addEventListener('popstate', handleUrlChange);
+    
+    // Also listen for custom organization change events
+    window.addEventListener('organizationChanged', handleUrlChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('organizationChanged', handleUrlChange);
+    };
+  }, [userData, clearConversation]);
 
   // Don't render until we have user data
   if (!userData) {
@@ -86,17 +198,21 @@ export default function AIAssistantPage() {
     setIsLoading(true);
 
     try {
+      const requestBody = {
+        message: content,
+        organizationId: userData.currentOrganization,
+        userId: userData._id,
+        sessionId: sessionId,
+      };
+      
+      console.log('Sending chat request:', requestBody);
+
       const response = await fetch('/api/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: content,
-          organizationId: userData.currentOrganization,
-          userId: userData._id,
-          sessionId: sessionId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

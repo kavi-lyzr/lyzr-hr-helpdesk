@@ -222,26 +222,33 @@ export async function chatWithLyzrAgent(
   apiKey: string,
   agentId: string,
   message: string,
+  userEmail: string,
   systemPromptVariables: Record<string, any> = {},
-  userId?: string,
   sessionId?: string
 ): Promise<{ response: string; session_id: string }> {
+  // Generate session ID if not provided
+  const finalSessionId = sessionId || `${agentId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  const requestBody = {
+    user_id: userEmail,
+    agent_id: agentId,
+    session_id: finalSessionId,
+    message: message,
+    system_prompt_variables: systemPromptVariables,
+    filter_variables: {},
+    features: [],
+    assets: []
+  };
+
+  console.log('Chat request:', JSON.stringify(requestBody, null, 2));
+
   const response = await fetch(`${LYZR_AGENT_BASE_URL}/v3/inference/chat/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
     },
-    body: JSON.stringify({
-      agent_id: agentId,
-      message,
-      user_id: userId || 'anonymous',
-      session_id: sessionId,
-      system_prompt_variables: systemPromptVariables,
-      filter_variables: {},
-      features: [],
-      assets: []
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -254,7 +261,8 @@ export async function chatWithLyzrAgent(
   console.log('Chat response:', data);
   
   return {
-    response: data.agent_response,
-    session_id: data.session_id,
+    // response: data.agent_response,
+    response: data.response,
+    session_id: data.session_id || finalSessionId,
   };
 }
