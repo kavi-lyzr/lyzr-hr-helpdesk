@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { ChatEmptyState } from "@/components/chat-empty-state";
 import { StarterQuestionsList } from "@/components/starter-questions";
 import { GradientManager } from "@/components/gradient-manager";
+import { useAuth } from "@/lib/AuthProvider";
 
 interface Message {
   id: string;
@@ -13,12 +14,65 @@ interface Message {
   timestamp: Date;
 }
 
+interface UserData {
+  _id: string;
+  currentOrganization: string;
+  name: string;
+  email: string;
+}
+
 export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const { userId, isAuthenticated } = useAuth();
+
+  // Fetch user data including current organization
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userId || !isAuthenticated) return;
+
+      try {
+        const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          // For now, we'll set the user data structure needed
+          // This should be enhanced to properly get current organization
+          setUserData({
+            _id: userId,
+            currentOrganization: data.organizations?.[0]?._id || '', // Use first org for now
+            name: data.user?.name || 'User',
+            email: data.user?.email || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [userId, isAuthenticated]);
+
+  // Don't render until we have user data
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading AI assistant...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSend = async (content: string) => {
     if (!content.trim()) return;
+
+    if (!userData?.currentOrganization) {
+      console.error('No current organization selected');
+      return;
+    }
 
     // Add user message
     const userMessage: Message = {
@@ -32,19 +86,54 @@ export default function AIAssistantPage() {
     setIsLoading(true);
 
     try {
-      // Simulate AI response for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/v1/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: content,
+          organizationId: userData.currentOrganization,
+          userId: userData._id,
+          sessionId: sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: data.response,
+          role: 'assistant',
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        // Update session ID for conversation continuity
+        if (data.sessionId) {
+          setSessionId(data.sessionId);
+        }
+      } else {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
       
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I'm here to help with your HR questions! This is a simulated response. The actual AI integration will be implemented with the Lyzr API using the organization's API key.",
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: "I'm sorry, I'm having trouble connecting to the AI assistant right now. Please try again later.",
         role: 'assistant',
         timestamp: new Date(),
       };
-
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error sending message:', error);
+      
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

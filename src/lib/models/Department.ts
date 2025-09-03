@@ -43,6 +43,11 @@ const DepartmentSchema: Schema<IDepartment> = new Schema(
 DepartmentSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 DepartmentSchema.index({ organizationId: 1 });
 
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.Department) {
+  delete mongoose.models.Department;
+}
+
 const Department: Model<IDepartment> = mongoose.model<IDepartment>('Department', DepartmentSchema);
 
 export default Department;

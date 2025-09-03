@@ -93,6 +93,11 @@ KnowledgeBaseSchema.index({ organizationId: 1, tags: 1 });
 KnowledgeBaseSchema.index({ fileId: 1 });
 KnowledgeBaseSchema.index({ uploadedBy: 1 });
 
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.KnowledgeBase) {
+  delete mongoose.models.KnowledgeBase;
+}
+
 const KnowledgeBase: Model<IKnowledgeBase> = mongoose.model<IKnowledgeBase>('KnowledgeBase', KnowledgeBaseSchema);
 
 export default KnowledgeBase;

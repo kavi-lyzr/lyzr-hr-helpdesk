@@ -5,6 +5,9 @@ export interface IOrganization extends Document {
   _id: string;
   name: string;
   lyzrApiKey?: string; // Encrypted API key for Lyzr integration
+  lyzrAgentId?: string; // Lyzr Agent ID
+  lyzrKnowledgeBaseId?: string; // Lyzr Knowledge Base (RAG) ID
+  lyzrToolIds?: string[]; // Array of Lyzr Tool IDs from toolset
   avatar?: string;
   createdBy: Schema.Types.ObjectId | IUser;
   systemInstruction?: string;
@@ -26,6 +29,17 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
       default: null,
       // This should be encrypted when stored
     },
+    lyzrAgentId: {
+      type: String,
+      default: null,
+    },
+    lyzrKnowledgeBaseId: {
+      type: String,
+      default: null,
+    },
+    lyzrToolIds: [{
+      type: String,
+    }],
     avatar: {
       type: String,
       default: null,
@@ -53,6 +67,11 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
 // Create indexes for better performance
 OrganizationSchema.index({ name: 1 });
 OrganizationSchema.index({ createdBy: 1 });
+
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.Organization) {
+  delete mongoose.models.Organization;
+}
 
 const Organization: Model<IOrganization> = mongoose.model<IOrganization>('Organization', OrganizationSchema);
 

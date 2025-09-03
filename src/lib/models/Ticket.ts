@@ -141,6 +141,11 @@ TicketSchema.index({ organizationId: 1, assignedTo: 1 });
 TicketSchema.index({ organizationId: 1, department: 1 });
 TicketSchema.index({ createdAt: -1 });
 
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.Ticket) {
+  delete mongoose.models.Ticket;
+}
+
 const Ticket: Model<ITicket> = mongoose.model<ITicket>('Ticket', TicketSchema);
 
 export default Ticket;

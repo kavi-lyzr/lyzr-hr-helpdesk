@@ -77,6 +77,11 @@ OrganizationUserSchema.index({ organizationId: 1, userId: 1 });
 OrganizationUserSchema.index({ email: 1 });
 OrganizationUserSchema.index({ inviteToken: 1 });
 
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.OrganizationUser) {
+  delete mongoose.models.OrganizationUser;
+}
+
 const OrganizationUser: Model<IOrganizationUser> = mongoose.model<IOrganizationUser>('OrganizationUser', OrganizationUserSchema);
 
 export default OrganizationUser;

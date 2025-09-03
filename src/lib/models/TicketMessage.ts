@@ -61,6 +61,11 @@ const TicketMessageSchema: Schema<ITicketMessage> = new Schema(
 TicketMessageSchema.index({ ticketId: 1, createdAt: 1 });
 TicketMessageSchema.index({ userId: 1 });
 
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.TicketMessage) {
+  delete mongoose.models.TicketMessage;
+}
+
 const TicketMessage: Model<ITicketMessage> = mongoose.model<ITicketMessage>('TicketMessage', TicketMessageSchema);
 
 export default TicketMessage;

@@ -44,7 +44,7 @@ export const tools = {
                     },
                     "department": {
                       "type": "string",
-                      "description": "The department the ticket is for. Examples: 'IT', 'HR', 'Operations'."
+                      "description": "The department the ticket is for. IMPORTANT: Only use department names that are provided in the system context. Do NOT use generic department names."
                     }
                   }
                 }
@@ -94,7 +94,7 @@ export const tools = {
                     },
                     "department": {
                       "type": "string",
-                      "description": "The new department for the ticket."
+                      "description": "The new department for the ticket. IMPORTANT: Only use department names that are provided in the system context."
                     },
                     "status": {
                       "type": "string",

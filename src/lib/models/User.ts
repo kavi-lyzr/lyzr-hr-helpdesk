@@ -83,14 +83,12 @@ const UserSchema: Schema<IUser> = new Schema(
   }
 );
 
-// Create indexes for better performance
-UserSchema.index({ email: 1 });
-UserSchema.index({ lyzrUserId: 1 });
+// Indexes are already created via unique: true in field definitions
 
-// Clear the model if it exists to avoid schema conflicts
-// if (mongoose.models.User) {
-//   delete mongoose.models.User;
-// }
+// Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
