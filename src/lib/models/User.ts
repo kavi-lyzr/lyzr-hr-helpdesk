@@ -88,9 +88,9 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ lyzrUserId: 1 });
 
 // Clear the model if it exists to avoid schema conflicts
-if (mongoose.models.User) {
-  delete mongoose.models.User;
-}
+// if (mongoose.models.User) {
+//   delete mongoose.models.User;
+// }
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
