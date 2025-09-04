@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import { Ticket, User, Organization, Department } from '@/lib/models';
 import { authMiddleware } from '@/lib/middleware/auth';
+import { validateToolToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply auth middleware
-    const authResult = await authMiddleware(request);
-    if (authResult) {
-      return authResult; // Return error response if auth fails
+    // Validate tool token and extract context
+    const tokenValidation = validateToolToken(request);
+    if (!tokenValidation.success || !tokenValidation.context) {
+      return NextResponse.json(
+        { error: tokenValidation.error || 'Tool call not authorized' },
+        { status: 401 }
+      );
     }
+
+    const { context } = tokenValidation;
 
     await dbConnect();
 
@@ -24,16 +30,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, we'll use a default user and organization
-    // In a production scenario, this would be extracted from the request context
-    // or passed as part of the tool call from Lyzr
-    
-    // Get the first user and organization for demo purposes
-    // This should be updated to use proper user context
-    const defaultUser = await User.findOne({});
-    const defaultOrganization = await Organization.findOne({});
+    // Use context from validated token
+    const user = await User.findById(context.userId);
+    const organization = await Organization.findById(context.organizationId);
 
-    if (!defaultUser || !defaultOrganization) {
+    if (!user || !organization) {
       return NextResponse.json(
         { error: 'User or organization not found' },
         { status: 404 }
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     let departmentId = null;
     if (department) {
       const foundDepartment = await Department.findOne({
-        organizationId: defaultOrganization._id,
+        organizationId: organization._id,
         name: { $regex: new RegExp(`^${department}$`, 'i') } // Case-insensitive match
       });
       departmentId = foundDepartment?._id;
@@ -58,8 +59,8 @@ export async function POST(request: NextRequest) {
       priority,
       department: departmentId, // Store the department ObjectId reference
       status: 'open',
-      createdBy: defaultUser._id,
-      organizationId: defaultOrganization._id,
+      createdBy: user._id,
+      organizationId: organization._id,
       assignedTo: [], // Will be assigned later
       tags: [category.toLowerCase()],
     });

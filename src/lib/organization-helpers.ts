@@ -1,6 +1,6 @@
 import { Organization, OrganizationUser, User, Department, type IOrganization, type IOrganizationUser, type UserRole } from '@/lib/models';
 import dbConnect from '@/lib/database';
-import { createLyzrKnowledgeBase, createLyzrTool, createLyzrAgent } from '@/lib/lyzr-services';
+import { createLyzrKnowledgeBase, createLyzrTool, createLyzrAgent, type ToolContext } from '@/lib/lyzr-services';
 import { decrypt } from '@/lib/encryption';
 
 export interface CreateOrganizationData {
@@ -64,9 +64,17 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
             organization.lyzrKnowledgeBaseId = knowledgeBase.rag_id;
             
             // Create tools
+            const toolContext: ToolContext = {
+              userId: user._id.toString(),
+              userEmail: user.email,
+              organizationId: organization._id.toString(),
+              organizationName: organization.name
+            };
+            
             const tool = await createLyzrTool(
               decryptedApiKey,
-              organization.name
+              organization.name,
+              toolContext
             );
             console.log('Tool IDs to store in DB:', tool.tool_ids);
             organization.lyzrToolIds = tool.tool_ids;

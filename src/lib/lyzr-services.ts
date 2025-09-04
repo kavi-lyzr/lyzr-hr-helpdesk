@@ -1,5 +1,6 @@
 import { defaultAgent } from './agent';
 import { tools } from './tools';
+import { encrypt } from './encryption';
 
 const LYZR_BASE_URL = 'https://app.lyzr.ai';
 const LYZR_RAG_BASE_URL = 'https://rag-prod.studio.lyzr.ai';
@@ -73,12 +74,20 @@ export async function createLyzrKnowledgeBase(
   };
 }
 
+export interface ToolContext {
+  userId: string;
+  userEmail: string;
+  organizationId: string;
+  organizationName: string;
+}
+
 /**
  * Create Lyzr Tools using OpenAPI specification
  */
 export async function createLyzrTool(
   apiKey: string,
-  organizationName: string
+  organizationName: string,
+  context: ToolContext
 ): Promise<LyzrToolResponse> {
   // Get the base URL from environment or use default
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'http://localhost:3000';
@@ -98,10 +107,15 @@ export async function createLyzrTool(
     ]
   };
 
+  // Create encrypted context token for tool authorization
+  const contextToken = encrypt(JSON.stringify(context));
+
   const requestData = {
     tool_set_name: `hr_helpdesk_${organizationName.toLowerCase().replace(/\s+/g, '_')}`,
     openapi_schema: updatedTools,
-    default_headers: {},
+    default_headers: {
+      "x-token": contextToken
+    },
     default_query_params: {},
     default_body_params: {},
     endpoint_defaults: {},
@@ -150,6 +164,28 @@ export async function createLyzrAgent(
   toolIds: string[],
   systemInstruction?: string
 ): Promise<LyzrAgentResponse> {
+  // Prepare tool usage description with actual tool names
+  // Assuming tool IDs are ordered: [raiseTicket, editTicket, getTickets]
+  let toolUsageDescription = defaultAgent.tool_usage_description;
+  
+  // Replace placeholders with actual tool names (in order)
+  if (toolIds.length >= 3) {
+    toolUsageDescription = toolUsageDescription
+      .replace(/{{TOOL_RAISE_TICKET}}/g, toolIds[0] || 'raiseTicket')
+      .replace(/{{TOOL_EDIT_TICKET}}/g, toolIds[1] || 'editTicket') 
+      .replace(/{{TOOL_GET_TICKETS}}/g, toolIds[2] || 'getTickets');
+  } else {
+    // Fallback to finding tools by name pattern
+    const raiseTicket = toolIds.find(id => id.includes('raise') || id.includes('Raise')) || toolIds[0];
+    const editTicket = toolIds.find(id => id.includes('edit') || id.includes('Edit')) || toolIds[1]; 
+    const getTickets = toolIds.find(id => id.includes('get') || id.includes('Get')) || toolIds[2];
+    
+    toolUsageDescription = toolUsageDescription
+      .replace(/{{TOOL_RAISE_TICKET}}/g, raiseTicket || 'raiseTicket')
+      .replace(/{{TOOL_EDIT_TICKET}}/g, editTicket || 'editTicket')
+      .replace(/{{TOOL_GET_TICKETS}}/g, getTickets || 'getTickets');
+  }
+
   // Prepare the agent configuration based on defaultAgent
   // Keep the placeholders as they will be replaced at runtime via system_prompt_variables
   const agentConfig = {
@@ -158,6 +194,8 @@ export async function createLyzrAgent(
     description: `A friendly and efficient AI-powered HR Assistant for ${organizationName}. It answers HR-related questions using a dedicated knowledge base and can manage support tickets`,
     // Keep the original agent_instructions with placeholders intact
     agent_instructions: defaultAgent.agent_instructions,
+    // Use the updated tool usage description
+    tool_usage_description: toolUsageDescription,
     features: [
       {
         type: "MEMORY",

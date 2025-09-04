@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import { Ticket, Department } from '@/lib/models';
 import { authMiddleware } from '@/lib/middleware/auth';
+import { validateToolToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply auth middleware
-    const authResult = await authMiddleware(request);
-    if (authResult) {
-      return authResult; // Return error response if auth fails
+    // Validate tool token and extract context
+    const tokenValidation = validateToolToken(request);
+    if (!tokenValidation.success || !tokenValidation.context) {
+      return NextResponse.json(
+        { error: tokenValidation.error || 'Tool call not authorized' },
+        { status: 401 }
+      );
     }
+
+    const { context } = tokenValidation;
 
     await dbConnect();
 
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest) {
       let departmentId = null;
       if (department) {
         const foundDepartment = await Department.findOne({
-          organizationId: ticket.organizationId,
+          organizationId: context.organizationId,
           name: { $regex: new RegExp(`^${department}$`, 'i') } // Case-insensitive match
         });
         departmentId = foundDepartment?._id;

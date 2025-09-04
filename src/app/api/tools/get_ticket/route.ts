@@ -2,20 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import { Ticket } from '@/lib/models';
 import { authMiddleware } from '@/lib/middleware/auth';
+import { validateToolToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply auth middleware
-    const authResult = await authMiddleware(request);
-    if (authResult) {
-      return authResult; // Return error response if auth fails
+    // Validate tool token and extract context
+    const tokenValidation = validateToolToken(request);
+    if (!tokenValidation.success || !tokenValidation.context) {
+      return NextResponse.json(
+        { error: tokenValidation.error || 'Tool call not authorized' },
+        { status: 401 }
+      );
     }
+
+    const { context } = tokenValidation;
 
     await dbConnect();
 
-    // Get all tickets (in production, this should be filtered by user/organization)
-    // For now, we'll return the most recent 10 tickets
-    const tickets = await Ticket.find({})
+    // Get tickets filtered by organization from context
+    const tickets = await Ticket.find({
+      organizationId: context.organizationId
+    })
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('createdBy', 'name email')

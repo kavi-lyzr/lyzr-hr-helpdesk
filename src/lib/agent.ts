@@ -72,7 +72,7 @@ Current user details: {{ user_details }}`,
         "priority": 0
       }
     ],
-    "tool_usage_description": "{\n  \"openapi-hr_helpdesk-raiseTicket\": [\n    \"call this raise ticket tool when you don't have context to answer user's query\"\n  ],\n  \"openapi-hr_helpdesk-editTicket\": [\n    \"when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context\"\n  ],\n  \"openapi-hr_helpdesk-getTickets\": [\n    \"use this tool to get all the tickets in the system\"\n  ]\n}",
+    "tool_usage_description": "{\n  \"{{TOOL_RAISE_TICKET}}\": [\n    \"call this raise ticket tool when you don't have context to answer user's query\"\n  ],\n  \"{{TOOL_EDIT_TICKET}}\": [\n    \"when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context\"\n  ],\n  \"{{TOOL_GET_TICKETS}}\": [\n    \"use this tool to get all the tickets in the system\"\n  ]\n}",
     "response_format": {
       "type": "text"
     },
