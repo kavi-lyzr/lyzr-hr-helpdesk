@@ -38,6 +38,7 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
           email: user.email,
           userId: data.createdBy,
           role: 'admin',
+          status: 'active', // Creator is immediately active
           createdBy: data.createdBy,
           joinedAt: new Date(),
         });

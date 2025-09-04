@@ -35,14 +35,14 @@ export async function createLyzrKnowledgeBase(
   
   const requestData = {
     user_id: apiKey,
-    llm_credential_id: 'lyzr_google',
-    embedding_credential_id: 'lyzr_openai',
+    llm_credential_id: 'lyzr_openai', //'lyzr_google',
+    embedding_credential_id: 'yzr_openai', //'lyzr_openai',
     vector_db_credential_id: 'lyzr_qdrant',
     description: `HR Helpdesk Knowledge Base for ${organizationName}`,
     collection_name: collectionName,
-    llm_model: 'gemini/gemini-2.0-flash-exp',
-    embedding_model: 'text-embedding-3-small',
-    vector_store_provider: 'qdrant',
+    llm_model: 'gpt-4o-mini', //'gemini/gemini-2.0-flash-exp',
+    embedding_model: 'text-embedding-ada-002', //'text-embedding-3-small',
+    vector_store_provider: 'Qdrant [Lyzr]', //'qdrant',
     semantic_data_model: false,
     meta_data: {}
   };

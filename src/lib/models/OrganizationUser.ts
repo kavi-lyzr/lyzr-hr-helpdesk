@@ -3,6 +3,7 @@ import { IOrganization } from './Organization';
 import { IUser } from './User';
 
 export type UserRole = 'employee' | 'resolver' | 'manager' | 'admin';
+export type UserStatus = 'active' | 'invited' | 'inactive';
 
 export interface IOrganizationUser extends Document {
   _id: string;
@@ -10,6 +11,8 @@ export interface IOrganizationUser extends Document {
   email: string;
   userId?: Schema.Types.ObjectId | IUser;
   role: UserRole;
+  status: UserStatus;
+  department?: Schema.Types.ObjectId | string;
   createdBy: Schema.Types.ObjectId | IUser;
   inviteToken?: string; // For invitation flow
   invitedAt?: Date;
@@ -43,6 +46,17 @@ const OrganizationUserSchema: Schema<IOrganizationUser> = new Schema(
       enum: ['employee', 'resolver', 'manager', 'admin'],
       required: [true, 'Role is required'],
       default: 'employee',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'invited', 'inactive'],
+      required: [true, 'Status is required'],
+      default: 'invited',
+    },
+    department: {
+      type: Schema.Types.ObjectId,
+      ref: 'Department',
+      default: null,
     },
     createdBy: {
       type: Schema.Types.ObjectId,

@@ -1,4 +1,4 @@
-import { User, type IUser } from '@/lib/models';
+import { User, type IUser, OrganizationUser, type IOrganizationUser } from '@/lib/models';
 import dbConnect from '@/lib/database';
 import { encrypt, decrypt } from '@/lib/encryption';
 
@@ -133,6 +133,10 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
     // console.log('3 newUser.lyzrApiKey', newUser.lyzrApiKey);
 
     await newUser.save();
+
+    // Check for existing organization invitations and link them to this new user
+    await linkPendingOrganizationInvitations(newUser);
+
     return newUser;
   } catch (error) {
     console.error('Error creating/updating user:', error);
@@ -210,6 +214,69 @@ export async function updateUserCurrentOrganization(userId: string, organization
     return user;
   } catch (error) {
     console.error('Error updating user current organization:', error);
+    return null;
+  }
+}
+
+/**
+ * Link pending organization invitations to newly created user
+ */
+async function linkPendingOrganizationInvitations(newUser: IUser): Promise<void> {
+  try {
+    // Find all pending invitations for this email
+    const pendingInvitations = await OrganizationUser.find({
+      email: newUser.email.toLowerCase(),
+      userId: null, // Not yet linked to a user
+      status: 'invited'
+    });
+
+    if (pendingInvitations.length > 0) {
+      // Update all pending invitations to link to this user and mark as active
+      await OrganizationUser.updateMany(
+        {
+          email: newUser.email.toLowerCase(),
+          userId: null,
+          status: 'invited'
+        },
+        {
+          userId: newUser._id,
+          status: 'active',
+          joinedAt: new Date()
+        }
+      );
+
+      console.log(`Linked ${pendingInvitations.length} pending organization invitations to user ${newUser.email}`);
+    }
+  } catch (error) {
+    console.error('Error linking pending organization invitations:', error);
+    // Don't throw error as user creation was successful, this is just a bonus operation
+  }
+}
+
+/**
+ * Get user's role in a specific organization
+ */
+export async function getUserRoleInOrganization(userId: string, organizationId: string): Promise<string | null> {
+  await dbConnect();
+  
+  try {
+    // First, find the user by their Lyzr user ID to get their MongoDB _id
+    const user = await User.findOne({ lyzrUserId: userId });
+    if (!user) {
+      console.log(`User not found with Lyzr ID: ${userId}`);
+      return null;
+    }
+
+    // Then find their role in the organization using their MongoDB _id
+    const organizationUser = await OrganizationUser.findOne({
+      userId: user._id,
+      organizationId: organizationId,
+      status: 'active'
+    });
+    
+    return organizationUser ? organizationUser.role : null;
+  } catch (error) {
+    console.error('Error fetching user role in organization:', error);
     return null;
   }
 }
