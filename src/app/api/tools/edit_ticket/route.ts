@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import { Ticket, Department } from '@/lib/models';
-import { authMiddleware } from '@/lib/middleware/auth';
 import { validateToolToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {

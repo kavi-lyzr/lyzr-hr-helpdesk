@@ -31,7 +31,7 @@ const TicketSchema: Schema<ITicket> = new Schema(
   {
     trackingNumber: {
       type: Number,
-      required: true,
+      required: false, // Will be set by pre-save hook
       unique: true,
     },
     title: {
@@ -109,7 +109,7 @@ const TicketSchema: Schema<ITicket> = new Schema(
 
 // Auto-increment tracking number
 TicketSchema.pre('save', async function (next) {
-  if (this.isNew) {
+  if (this.isNew && !this.trackingNumber) {
     try {
       const lastTicket = await mongoose.model('Ticket').findOne().sort({ trackingNumber: -1 });
       this.trackingNumber = lastTicket ? lastTicket.trackingNumber + 1 : 1000;
@@ -134,7 +134,6 @@ TicketSchema.pre('save', function (next) {
 });
 
 // Create indexes for better performance
-TicketSchema.index({ trackingNumber: 1 });
 TicketSchema.index({ organizationId: 1, status: 1 });
 TicketSchema.index({ organizationId: 1, createdBy: 1 });
 TicketSchema.index({ organizationId: 1, assignedTo: 1 });
