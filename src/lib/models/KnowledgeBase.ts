@@ -7,14 +7,16 @@ export type FileType = 'pdf' | 'docx' | 'txt' | 'url';
 export interface IKnowledgeBase extends Document {
   _id: string;
   title: string;
-  fileId?: string; // Lyzr Studio file identifier
-  fileName?: string;
+  ragId?: string; // Lyzr RAG ID returned after training
+  fileName: string;
+  originalFileName: string; // Store original filename as uploaded
   fileType: FileType;
-  fileUrl?: string; // For URL type or file storage
-  fileSize?: number; // In bytes
+  fileSize: number; // In bytes
   organizationId: Schema.Types.ObjectId | IOrganization;
   uploadedBy: Schema.Types.ObjectId | IUser;
-  isActive: boolean;
+  status: 'processing' | 'active' | 'failed' | 'deleted';
+  documentCount?: number; // Number of documents created from this file in RAG
+  processingError?: string; // Error message if processing failed
   tags?: string[];
   description?: string;
   schemaVersion: number;
@@ -30,27 +32,31 @@ const KnowledgeBaseSchema: Schema<IKnowledgeBase> = new Schema(
       trim: true,
       maxlength: [200, 'Title cannot exceed 200 characters'],
     },
-    fileId: {
+    ragId: {
       type: String,
       trim: true,
       sparse: true, // Allows null values while maintaining uniqueness for non-null values
     },
     fileName: {
       type: String,
+      required: [true, 'File name is required'],
       trim: true,
       maxlength: [255, 'File name cannot exceed 255 characters'],
     },
+    originalFileName: {
+      type: String,
+      required: [true, 'Original file name is required'],
+      trim: true,
+      maxlength: [255, 'Original file name cannot exceed 255 characters'],
+    },
     fileType: {
       type: String,
-      enum: ['pdf', 'docx', 'txt', 'url'],
+      enum: ['pdf', 'docx', 'txt'],
       required: [true, 'File type is required'],
-    },
-    fileUrl: {
-      type: String,
-      trim: true,
     },
     fileSize: {
       type: Number,
+      required: [true, 'File size is required'],
       min: [0, 'File size cannot be negative'],
     },
     organizationId: {
@@ -63,9 +69,19 @@ const KnowledgeBaseSchema: Schema<IKnowledgeBase> = new Schema(
       ref: 'User',
       required: [true, 'Uploaded by is required'],
     },
-    isActive: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: ['processing', 'active', 'failed', 'deleted'],
+      default: 'processing',
+    },
+    documentCount: {
+      type: Number,
+      min: [0, 'Document count cannot be negative'],
+    },
+    processingError: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Processing error cannot exceed 1000 characters'],
     },
     tags: [{
       type: String,
@@ -88,9 +104,9 @@ const KnowledgeBaseSchema: Schema<IKnowledgeBase> = new Schema(
 );
 
 // Create indexes for better performance
-KnowledgeBaseSchema.index({ organizationId: 1, isActive: 1 });
+KnowledgeBaseSchema.index({ organizationId: 1, status: 1 });
 KnowledgeBaseSchema.index({ organizationId: 1, tags: 1 });
-KnowledgeBaseSchema.index({ fileId: 1 });
+KnowledgeBaseSchema.index({ ragId: 1 });
 KnowledgeBaseSchema.index({ uploadedBy: 1 });
 
 // Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
