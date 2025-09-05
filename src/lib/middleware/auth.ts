@@ -67,19 +67,10 @@ export async function requireAuth(request: NextRequest): Promise<{ success: bool
 
 /**
  * Express-style middleware for API authentication
- * Returns error response if authentication fails, null if successful
+ * Returns auth result with success flag and user data
  */
-export async function authMiddleware(request: NextRequest) {
+export async function authMiddleware(request: NextRequest): Promise<{ success: boolean; user?: any; error?: string }> {
   const auth = await authenticateRequest(request);
   
-  if (!auth.success) {
-    const { NextResponse } = await import('next/server');
-    return NextResponse.json(
-      { error: auth.error || 'Authentication required' },
-      { status: 401 }
-    );
-  }
-  
-  // Authentication successful, return null to continue
-  return null;
+  return auth;
 }
