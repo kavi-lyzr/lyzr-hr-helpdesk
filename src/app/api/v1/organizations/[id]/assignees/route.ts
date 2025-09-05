@@ -4,7 +4,7 @@ import { OrganizationUser } from '@/lib/models';
 import { getUserRoleInOrganization } from '@/lib/organization-helpers';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const organizationId = params.id;
+    const { id: organizationId } = await params;
     const userId = searchParams.get('userId');
 
     if (!userId) {

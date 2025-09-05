@@ -5,7 +5,7 @@ import { authMiddleware } from '@/lib/middleware/auth';
 import { getUserRoleInOrganization } from '@/lib/organization-helpers';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -18,7 +18,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     await dbConnect();
 
     // First, verify the ticket exists and user has access
-    const ticket = await Ticket.findById(params.id);
+    const { id } = await params;
+    const ticket = await Ticket.findById(id);
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Build message filter
-    const messageFilter: any = { ticketId: params.id };
+    const messageFilter: any = { ticketId: id };
     
     // If user is an employee and not the ticket owner, they can't see internal messages
     if (userRole === 'employee') {
@@ -75,7 +76,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     await dbConnect();
 
     // First, verify the ticket exists and user has access
-    const ticket = await Ticket.findById(params.id);
+    const { id } = await params;
+    const ticket = await Ticket.findById(id);
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
@@ -128,7 +130,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const shouldBeInternal = isInternal && userRole !== 'employee';
 
     const message = new TicketMessage({
-      ticketId: params.id,
+      ticketId: id,
       role: messageRole,
       content: content.trim(),
       userId: authResult.user._id,
@@ -141,7 +143,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     await message.populate('userId', 'name email avatar');
 
     // Update ticket's updatedAt timestamp
-    await Ticket.findByIdAndUpdate(params.id, { updatedAt: new Date() });
+    await Ticket.findByIdAndUpdate(id, { updatedAt: new Date() });
 
     return NextResponse.json({
       success: true,

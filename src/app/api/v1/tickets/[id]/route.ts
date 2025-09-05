@@ -5,7 +5,7 @@ import { authMiddleware } from '@/lib/middleware/auth';
 import { getUserRoleInOrganization } from '@/lib/organization-helpers';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -17,7 +17,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     await dbConnect();
 
-    const ticket = await Ticket.findById(params.id)
+    const { id } = await params;
+    const ticket = await Ticket.findById(id)
       .populate('createdBy', 'name email avatar')
       .populate('assignedTo', 'name email avatar')
       .populate('department', 'name description')
@@ -63,7 +64,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     await dbConnect();
 
-    const ticket = await Ticket.findById(params.id);
+    const { id } = await params;
+    const ticket = await Ticket.findById(id);
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
@@ -147,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Update the ticket
     const updatedTicket = await Ticket.findByIdAndUpdate(
-      params.id,
+      id,
       updateFields,
       { new: true, runValidators: true }
     )
