@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +75,7 @@ interface Assignee {
   role: string;
 }
 
-export default function TicketsPage() {
+function TicketsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userId } = useAuth();
@@ -647,5 +647,13 @@ export default function TicketsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function TicketsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TicketsPageContent />
+    </Suspense>
   );
 }

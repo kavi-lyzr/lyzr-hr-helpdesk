@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +49,7 @@ interface EditDepartmentData {
   description?: string;
 }
 
-export default function OrganizationPage() {
+function OrganizationPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userId } = useAuth();
@@ -831,5 +831,13 @@ export default function OrganizationPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function OrganizationPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OrganizationPageContent />
+    </Suspense>
   );
 }
