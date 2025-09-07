@@ -269,7 +269,7 @@ export default function AIAssistantPage() {
             <StarterQuestionsList handleSend={handleSend} />
           </ChatEmptyState>
         ) : (
-          <div className="flex flex-col h-full max-w-4xl mx-auto w-full">
+          <div className="flex flex-col h-full max-w-4xl mx-auto w-full mb-32">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((message) => (
@@ -312,7 +312,7 @@ export default function AIAssistantPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-border/30 p-4 bg-background/50 backdrop-blur-sm">
+            <div className="border-t border-border/30 p-4 bg-background/50 backdrop-blur-sm fixed w-full max-w-4xl mx-auto flex items-center justify-center bottom-0 px-32">
               <ChatInput 
                 onSend={handleSend} 
                 isLoading={isLoading}

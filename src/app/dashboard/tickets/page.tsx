@@ -400,12 +400,12 @@ function TicketsPageContent() {
                 <TableHead>Status</TableHead>
                 {canEditTickets && <TableHead>Assignee</TableHead>}
                 <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
+                {/* <TableHead>Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {tickets.map((ticket) => (
-                <TableRow key={ticket._id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow key={ticket._id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleTicketClick(ticket)}>
                   <TableCell>#{ticket.trackingNumber}</TableCell>
                   <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
                   {canEditTickets && (
@@ -444,17 +444,20 @@ function TicketsPageContent() {
                     </TableCell>
                   )}
                   <TableCell>{new Date(ticket.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="flex items-center space-x-2">
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => handleTicketClick(ticket)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTicketClick(ticket);
+                        }}
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
@@ -464,7 +467,7 @@ function TicketsPageContent() {
 
       {/* Ticket Detail Dialog */}
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[80%] xl:min-w-[60%] min-h-[80%] p-8 xl:p-12 overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Ticket #{selectedTicket?.trackingNumber} - {selectedTicket?.title}</span>
@@ -486,7 +489,7 @@ function TicketsPageContent() {
             <div className="flex-1 space-y-4 overflow-y-auto">
               {isEditMode ? (
                 <div className="space-y-4">
-                  <div>
+                  <div className="flex flex-col gap-2 mt-2">
                     <Label htmlFor="title">Title</Label>
                     <Input
                       id="title"
@@ -494,7 +497,7 @@ function TicketsPageContent() {
                       onChange={(e) => setEditedTicket({...editedTicket, title: e.target.value})}
                     />
                   </div>
-                  <div>
+                  <div className="flex flex-col gap-2 mt-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
@@ -504,7 +507,7 @@ function TicketsPageContent() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="flex flex-col gap-2 mt-2">
                       <Label htmlFor="status">Status</Label>
                       <Select 
                         value={editedTicket.status} 
@@ -513,7 +516,7 @@ function TicketsPageContent() {
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='w-full'>
                           <SelectItem value="open">Open</SelectItem>
                           <SelectItem value="in_progress">In Progress</SelectItem>
                           <SelectItem value="pending_information">Pending Information</SelectItem>
@@ -523,7 +526,7 @@ function TicketsPageContent() {
                       </Select>
                     </div>
                     {canEditTickets && (
-                      <div>
+                      <div className="flex flex-col gap-2 mt-2">
                         <Label htmlFor="priority">Priority</Label>
                         <Select 
                           value={editedTicket.priority} 
@@ -532,7 +535,7 @@ function TicketsPageContent() {
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className='w-full'>
                             <SelectItem value="low">Low</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="high">High</SelectItem>
@@ -551,7 +554,7 @@ function TicketsPageContent() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-medium text-sm text-muted-foreground">Description</h3>
-                    <p className="mt-1">{selectedTicket?.description}</p>
+                    <p className="mt-1 max-h-64 overflow-y-auto">{selectedTicket?.description}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
