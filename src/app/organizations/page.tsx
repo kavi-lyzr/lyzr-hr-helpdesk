@@ -6,11 +6,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Building, User, Loader2, LogOut } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Building, User, Loader2, LogOut, Settings, ChevronDown, Boxes } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useAuth } from "@/lib/AuthProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface Organization {
   _id: string;
@@ -138,142 +142,279 @@ export default function OrganizationsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-muted/40">
-      <header className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="font-bold text-xl">Lyzr</div>
-        <div className="flex items-center gap-3">
-          <ThemeSwitcher />
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Supabase-style Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Logo Section */}
+          <div className="flex items-center gap-3">
+            <Image
+              src="/lyzr.png"
+              alt="Lyzr"
+              width={32}
+              height={32}
+              className="h-8 w-8"
+            />
+            <div className="flex flex-col">
+              <span className="font-semibold text-base">Lyzr HR</span>
+              <p className="text-xs text-muted-foreground">Helpdesk</p>
+              {/* <Badge variant="secondary" className="text-xs font-medium">AI</Badge> */}
+            </div>
+          </div>
+
+          {/* User Menu */}
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 pr-3 pl-0">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-xs bg-muted">
+                      {userId?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">Account</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {userId || 'User'}
+                  </p>
+                </div>
+                {/* <DropdownMenuSeparator /> */}
+                {/* <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem> */}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
-      <main className="flex-1 flex flex-col items-center p-4">
-        <div className="w-full max-w-4xl">
-          <h1 className="text-3xl font-bold text-center mb-8">Your Organizations</h1>
+
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Page Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl font-semibold mb-2">Your Organizations</h1>
+              {/* <p className="text-muted-foreground">
+                Choose an organization to continue to your dashboard
+              </p> */}
+            </div>
+            
+            {/* New Organization Button */}
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New organization
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[50%] w-2/3">
+                <DialogHeader>
+                  <DialogTitle className="text-xl">Create New Organization</DialogTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Set up a new organization workspace for your team.
+                  </p>
+                </DialogHeader>
+                <form onSubmit={handleCreateOrganization} className="space-y-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="org-name-header" className="text-sm font-medium">
+                      Organization Name
+                    </Label>
+                    <Input
+                      id="org-name-header"
+                      placeholder="e.g., Acme Corporation"
+                      value={createForm.name}
+                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                      required
+                      className="h-10"
+                    />
+                  </div>
+                  {/* <div className="space-y-2">
+                    <Label htmlFor="system-instruction-header" className="text-sm font-medium">
+                      AI Assistant Instructions
+                    </Label>
+                    <Textarea
+                      id="system-instruction-header"
+                      placeholder="Optional: Customize how the AI assistant should behave for this organization..."
+                      value={createForm.systemInstruction}
+                      onChange={(e) => setCreateForm({ ...createForm, systemInstruction: e.target.value })}
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You can always change this later in organization settings.
+                    </p>
+                  </div> */}
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setCreateDialogOpen(false)}
+                      disabled={isCreating}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isCreating || !createForm.name.trim()}
+                      className="min-w-[100px]"
+                    >
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Organization'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
           
           {loadingOrgs ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading organizations...</p>
+            <div className="flex h-full items-center justify-center py-32">
+              <div className="text-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading organizations...</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {organizations.map((org) => (
-                <Card 
-                  key={org._id} 
-                  className="hover:shadow-lg transition-shadow duration-300 animate-fade-in-up cursor-pointer"
-                  onClick={() => handleOrganizationSelect(org._id)}
-                >
-                  <CardHeader className="flex flex-row items-center gap-4">
-                    <Building className="h-8 w-8 text-primary" />
-                    <CardTitle className="text-lg">{org.name || org.organization?.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Your role: {org.role}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Card className="flex items-center justify-center border-dashed border-2 hover:border-primary transition-colors duration-300 cursor-pointer">
-                    <Button variant="ghost" className="w-full h-full">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Organization
-                    </Button>
+            <>
+              {/* Organizations Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {organizations.map((org) => (
+                  <Card 
+                    key={org._id} 
+                    className="group relative overflow-hidden border-border/50 bg-card backdrop-blur-sm hover:border-border transition-all duration-200 cursor-pointer"
+                    onClick={() => handleOrganizationSelect(org._id)}
+                  >
+                    <CardContent className="group-hover:bg-muted/80 group-hover:opacity-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <Boxes className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-medium text-base truncate">
+                              {org.name || org.organization?.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {org.role === 'admin' ? 'Administrator' : 
+                               org.role === 'manager' ? 'Manager' :
+                               org.role === 'resolver' ? 'Resolver' : 'Employee'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={org.role === 'admin' ? 'default' : 'secondary'} 
+                          className="text-xs"
+                        >
+                          {org.role}
+                        </Badge>
+                      </div>
+                      
+                      {/* <div className="flex items-center text-xs text-muted-foreground">
+                        <User className="mr-1 h-3 w-3" />
+                        <span>Member since {new Date(org.joinedAt).toLocaleDateString()}</span>
+                      </div> */}
+                    </CardContent>
                   </Card>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Create New Organization</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateOrganization} className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="org-name">Organization Name</Label>
-                      <Input
-                        id="org-name"
-                        placeholder="Enter organization name"
-                        value={createForm.name}
-                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="system-instruction">System Instruction (Optional)</Label>
-                      <Textarea
-                        id="system-instruction"
-                        placeholder="Customize how the AI assistant should behave for this organization"
-                        value={createForm.systemInstruction}
-                        onChange={(e) => setCreateForm({ ...createForm, systemInstruction: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isCreating || !createForm.name.trim()}>
-                        {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Create
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
+                ))}
+              </div>
+            </>
           )}
 
           {!loadingOrgs && organizations.length === 0 && (
-            <div className="text-center py-12 space-y-4">
-              <Building className="h-12 w-12 mx-auto text-muted-foreground" />
-              <div>
-                <h3 className="text-lg font-medium">No organizations yet</h3>
-                <p className="text-muted-foreground">Create your first organization to get started</p>
+            <div className="flex flex-col items-center justify-center py-16 space-y-6">
+              <div className="p-4 rounded-full bg-muted/50">
+                <Building className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold">No organizations found</h3>
+                <p className="text-muted-foreground max-w-md">
+                  You haven't joined any organizations yet. Create your first organization to get started with Lyzr HR Helpdesk.
+                </p>
               </div>
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button size="lg" className="mt-4">
                     <Plus className="mr-2 h-4 w-4" />
-                    Create Organization
+                    Create Your First Organization
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px]">
                   <DialogHeader>
-                    <DialogTitle>Create New Organization</DialogTitle>
+                    <DialogTitle className="text-xl">Create New Organization</DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Set up a new organization workspace for your team.
+                    </p>
                   </DialogHeader>
-                  <form onSubmit={handleCreateOrganization} className="space-y-4 mt-4">
+                  <form onSubmit={handleCreateOrganization} className="space-y-6 mt-6">
                     <div className="space-y-2">
-                      <Label htmlFor="org-name">Organization Name</Label>
+                      <Label htmlFor="org-name-empty" className="text-sm font-medium">
+                        Organization Name *
+                      </Label>
                       <Input
-                        id="org-name"
-                        placeholder="Enter organization name"
+                        id="org-name-empty"
+                        placeholder="e.g., Acme Corporation"
                         value={createForm.name}
                         onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                         required
+                        className="h-10"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="system-instruction">System Instruction (Optional)</Label>
+                      <Label htmlFor="system-instruction-empty" className="text-sm font-medium">
+                        AI Assistant Instructions
+                      </Label>
                       <Textarea
-                        id="system-instruction"
-                        placeholder="Customize how the AI assistant should behave for this organization"
+                        id="system-instruction-empty"
+                        placeholder="Optional: Customize how the AI assistant should behave for this organization..."
                         value={createForm.systemInstruction}
                         onChange={(e) => setCreateForm({ ...createForm, systemInstruction: e.target.value })}
-                        rows={3}
+                        rows={4}
+                        className="resize-none"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        You can always change this later in organization settings.
+                      </p>
                     </div>
-                    <div className="flex justify-end gap-3">
-                      <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setCreateDialogOpen(false)}
+                        disabled={isCreating}
+                      >
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={isCreating || !createForm.name.trim()}>
-                        {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Create
+                      <Button 
+                        type="submit" 
+                        disabled={isCreating || !createForm.name.trim()}
+                        className="min-w-[100px]"
+                      >
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          'Create Organization'
+                        )}
                       </Button>
                     </div>
                   </form>
