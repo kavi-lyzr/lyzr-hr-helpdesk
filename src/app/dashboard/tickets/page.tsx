@@ -162,8 +162,10 @@ function TicketsPageContent() {
 
   // Fetch ticket messages
   const fetchTicketMessages = async (ticketId: string) => {
+    if (!userId) return;
+    
     try {
-      const response = await fetch(`/api/v1/tickets/${ticketId}/messages`);
+      const response = await fetch(`/api/v1/tickets/${ticketId}/messages?userId=${userId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -176,13 +178,16 @@ function TicketsPageContent() {
 
   // Add message to ticket
   const addMessage = async () => {
-    if (!selectedTicket || !newMessage.trim()) return;
+    if (!selectedTicket || !newMessage.trim() || !userId) return;
     
     try {
       const response = await fetch(`/api/v1/tickets/${selectedTicket._id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newMessage })
+        body: JSON.stringify({ 
+          content: newMessage,
+          userId: userId
+        })
       });
       
       const data = await response.json();
@@ -198,10 +203,10 @@ function TicketsPageContent() {
 
   // Update ticket
   const updateTicket = async () => {
-    if (!selectedTicket) return;
+    if (!selectedTicket || !userId) return;
     
     try {
-      const response = await fetch(`/api/v1/tickets/${selectedTicket._id}`, {
+      const response = await fetch(`/api/v1/tickets/${selectedTicket._id}?userId=${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editedTicket)

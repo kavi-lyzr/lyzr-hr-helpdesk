@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
 import { Ticket, TicketMessage } from '@/lib/models';
-import { authMiddleware } from '@/lib/middleware/auth';
 import { getUserRoleInOrganization } from '@/lib/organization-helpers';
 
 interface RouteParams {
@@ -9,13 +8,15 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const authResult = await authMiddleware(request);
-  if (!authResult.success || !authResult.user) {
-    return NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
-  }
-
   try {
     await dbConnect();
+    
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
 
     // First, verify the ticket exists and user has access
     const { id } = await params;
@@ -28,16 +29,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const organizationId = typeof ticket.organizationId === 'object' && 'name' in ticket.organizationId 
       ? ticket.organizationId._id.toString() 
       : ticket.organizationId.toString();
-    const userRole = await getUserRoleInOrganization(organizationId, authResult.user._id.toString());
+    const userRole = await getUserRoleInOrganization(organizationId, userId);
     if (!userRole) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Get the MongoDB user ID for comparison
+    const { User } = await import('@/lib/models');
+    const user = await User.findOne({ lyzrUserId: userId });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Employees can only view messages for their own tickets
     const createdById = typeof ticket.createdBy === 'object' && 'name' in ticket.createdBy 
       ? ticket.createdBy._id.toString() 
       : ticket.createdBy.toString();
-    const isTicketOwner = createdById === authResult.user._id.toString();
+    const isTicketOwner = createdById === user._id.toString();
     const canViewAllMessages = userRole === 'admin' || userRole === 'manager' || userRole === 'resolver';
     
     if (!canViewAllMessages && !isTicketOwner) {
@@ -67,13 +75,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  const authResult = await authMiddleware(request);
-  if (!authResult.success || !authResult.user) {
-    return NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
-  }
-
   try {
     await dbConnect();
+    
+    const body = await request.json();
+    const { content, isInternal, userId } = body;
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
 
     // First, verify the ticket exists and user has access
     const { id } = await params;
@@ -86,13 +96,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const organizationId = typeof ticket.organizationId === 'object' && 'name' in ticket.organizationId 
       ? ticket.organizationId._id.toString() 
       : ticket.organizationId.toString();
-    const userRole = await getUserRoleInOrganization(organizationId, authResult.user._id.toString());
+    const userRole = await getUserRoleInOrganization(organizationId, userId);
     if (!userRole) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { content, isInternal } = body;
+    // Get the MongoDB user ID for comparison
+    const { User } = await import('@/lib/models');
+    const user = await User.findOne({ lyzrUserId: userId });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
     if (!content || content.trim().length === 0) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
@@ -104,7 +118,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const createdById = typeof ticket.createdBy === 'object' && 'name' in ticket.createdBy 
       ? ticket.createdBy._id.toString() 
       : ticket.createdBy.toString();
-    const isTicketOwner = createdById === authResult.user._id.toString();
+    const isTicketOwner = createdById === user._id.toString();
 
     switch (userRole) {
       case 'employee':
@@ -133,7 +147,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       ticketId: id,
       role: messageRole,
       content: content.trim(),
-      userId: authResult.user._id,
+      userId: user._id,
       isInternal: shouldBeInternal || false
     });
 
