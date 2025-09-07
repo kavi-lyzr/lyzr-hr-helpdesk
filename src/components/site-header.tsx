@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, User, Building, Plus, LogOut } from "lucide-react";
+import { Menu, User, Building, Plus, LogOut, Boxes } from "lucide-react";
 import AppSidebar from "./app-sidebar";
 import { ThemeSwitcher } from "./theme-switcher";
 import { useAuth } from "@/lib/AuthProvider";
@@ -110,7 +110,7 @@ export default function SiteHeader() {
           <Select value={currentOrg?._id || ''} onValueChange={handleOrgChange}>
             <SelectTrigger className="h-9 border-border/50 bg-muted/50">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <Boxes className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0 text-left">
                   <SelectValue 
                     placeholder="Select Organization"
@@ -148,13 +148,13 @@ export default function SiteHeader() {
         </div>
 
         {/* Right Side - Theme + User */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <ThemeSwitcher />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Avatar className="h-6 w-6">
+                <Avatar className="h-9 w-9">
                   <AvatarImage src="" />
                   <AvatarFallback className="text-xs bg-muted">
                     {email?.charAt(0).toUpperCase() || 'U'}

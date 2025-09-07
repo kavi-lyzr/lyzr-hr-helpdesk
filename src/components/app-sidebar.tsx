@@ -105,7 +105,7 @@ export default function AppSidebar() {
   );
 
   return (
-    <aside className={`hidden lg:flex lg:flex-col border-r bg-background/60 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden lg:flex lg:flex-col border-r bg-muted/20 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header with Logo and Collapse Button */}
       <div className="h-16 border-b border-border/50 flex items-center px-4 justify-between">
         {!isCollapsed && (
@@ -127,14 +127,14 @@ export default function AppSidebar() {
           variant="ghost" 
           size="sm" 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 hover:bg-primary/10"
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3">
+      <nav className="flex-1 p-3 backdrop-blur-xl">
         <ul className="space-y-1">
           {filteredNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -145,13 +145,14 @@ export default function AppSidebar() {
                     <TooltipTrigger asChild>
                       <Link href={`${item.href}?org=${currentOrg?._id || ''}`}>
                         <Button
-                          variant="ghost"
+                          // variant="ghost"
+                          // variant="secondary"
                           className={`w-full h-9 transition-colors ${
                             isCollapsed ? 'justify-center px-0' : 'justify-start px-3'
                           } ${
                             isActive 
-                              ? 'bg-accent text-accent-foreground' 
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground' 
+                              : 'bg-transparent text-foreground hover:text-foreground hover:bg-primary/10'
                           }`}
                         >
                           <item.icon className={`h-4 w-4 ${!isCollapsed && 'mr-3'}`} />
@@ -181,7 +182,7 @@ export default function AppSidebar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full h-10 p-0">
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src="" />
                         <AvatarFallback className="text-xs bg-muted">
                           {email?.charAt(0).toUpperCase() || 'U'}

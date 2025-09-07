@@ -142,7 +142,7 @@ export default function OrganizationsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex flex-col min-h-screen bg-sidebar bg-gradient-to-br from-background via-background to-muted/20">
       {/* Supabase-style Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -299,10 +299,10 @@ export default function OrganizationsPage() {
                 {organizations.map((org) => (
                   <Card 
                     key={org._id} 
-                    className="group relative overflow-hidden border-border/50 bg-card backdrop-blur-sm hover:border-border transition-all duration-200 cursor-pointer"
+                    className="group relative bg-card/20 hover:bg-muted/40 overflow-hidden border-border/50 backdrop-blur-sm hover:border-border transition-all duration-200 cursor-pointer"
                     onClick={() => handleOrganizationSelect(org._id)}
                   >
-                    <CardContent className="group-hover:bg-muted/80 group-hover:opacity-0">
+                    <CardContent className="">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
