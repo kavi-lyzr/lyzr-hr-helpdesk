@@ -15,7 +15,7 @@ export const tools = {
       "/api/tools/raise_ticket": {
         "post": {
           "summary": "Create or raise a new support ticket",
-          "description": "Use this tool to create a new support ticket when a user reports an issue. You must provide a description, category, priority, and department for the ticket.",
+          "description": "Use this tool to create a new support ticket when a user reports an issue. Only description is required - priority defaults to 'medium' and department can be auto-assigned or left unassigned.",
           "operationId": "raiseTicket",
           "requestBody": {
             "required": true,
@@ -24,27 +24,20 @@ export const tools = {
                 "schema": {
                   "type": "object",
                   "required": [
-                    "description",
-                    "category",
-                    "priority",
-                    "department"
+                    "description"
                   ],
                   "properties": {
                     "description": {
                       "type": "string",
                       "description": "A detailed description of the user's issue or request."
                     },
-                    "category": {
-                      "type": "string",
-                      "description": "The category of the ticket. Examples: 'IT', 'HR', 'Finance'."
-                    },
                     "priority": {
                       "type": "string",
-                      "description": "The priority level of the ticket. Examples: 'low', 'medium', 'high'."
+                      "description": "The priority level of the ticket. Optional - defaults to 'medium'. Examples: 'low', 'medium', 'high', 'urgent'."
                     },
                     "department": {
                       "type": "string",
-                      "description": "The department the ticket is for. IMPORTANT: Only use department names that are provided in the system context. Do NOT use generic department names."
+                      "description": "The department the ticket is for. Optional - can be left empty for unassigned tickets. Use department names like 'IT', 'HR', 'Finance', etc."
                     }
                   }
                 }
@@ -83,10 +76,6 @@ export const tools = {
                     "description": {
                       "type": "string",
                       "description": "The new, updated description for the ticket."
-                    },
-                    "category": {
-                      "type": "string",
-                      "description": "The new category for the ticket."
                     },
                     "priority": {
                       "type": "string",

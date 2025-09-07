@@ -45,6 +45,32 @@ export async function createOrganization(data: CreateOrganizationData): Promise<
         
         await organizationUser.save();
 
+        // Create default departments for the organization
+        try {
+          const defaultDepartments = [
+            { name: 'IT', description: 'Information Technology support and services' },
+            { name: 'HR', description: 'Human Resources and employee relations' },
+            { name: 'Finance', description: 'Financial operations and accounting' },
+            { name: 'Operations', description: 'General operations and administration' },
+            { name: 'Marketing', description: 'Marketing and communications' },
+            { name: 'Sales', description: 'Sales and customer relations' }
+          ];
+
+          for (const dept of defaultDepartments) {
+            const department = new Department({
+              name: dept.name,
+              description: dept.description,
+              organizationId: organization._id
+            });
+            await department.save();
+          }
+
+          console.log('Created default departments for organization:', organization.name);
+        } catch (deptError) {
+          console.error('Error creating default departments:', deptError);
+          // Don't fail organization creation if department creation fails
+        }
+
         // Store the user's API key in the organization (if available)
         if (user.lyzrApiKey) {
           organization.lyzrApiKey = user.lyzrApiKey; // Already encrypted
@@ -215,6 +241,8 @@ export async function updateUserRoleInOrganization(
 
 /**
  * Check if user has access to organization and get their role
+ * @param organizationId - Organization ID  
+ * @param userId - Either Lyzr user ID or MongoDB ObjectId
  */
 export async function getUserRoleInOrganization(
   organizationId: string,
@@ -223,16 +251,29 @@ export async function getUserRoleInOrganization(
   await dbConnect();
 
   try {
+    // First, find the user by their Lyzr user ID to get their MongoDB _id
+    // If userId is already a MongoDB ObjectId, this will return null and we'll handle it
+    let mongoDbUserId: string;
+    
+    const userByLyzrId = await User.findOne({ lyzrUserId: userId });
+    if (userByLyzrId) {
+      // userId is a Lyzr ID, use the MongoDB _id
+      mongoDbUserId = userByLyzrId._id.toString();
+    } else {
+      // Assume userId is already a MongoDB ObjectId (for backward compatibility)
+      mongoDbUserId = userId;
+    }
+
     // First check if user is the creator
     const organization = await Organization.findById(organizationId);
-    if (organization?.createdBy.toString() === userId) {
+    if (organization?.createdBy.toString() === mongoDbUserId) {
       return 'admin';
     }
 
     // Then check OrganizationUser table
     const organizationUser = await OrganizationUser.findOne({
       organizationId,
-      userId,
+      userId: mongoDbUserId,
     });
 
     return organizationUser?.role || null;

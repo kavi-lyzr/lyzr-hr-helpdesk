@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { ticket_id, description, category, priority, department, status } = body;
+    const { ticket_id, description, priority, department, status } = body;
 
     // Validate required fields
     if (!ticket_id) {
       return NextResponse.json(
-        { error: 'Ticket ID is required' },
+        { error: 'Ticket ID is required. Try fetching the tickets first.' },
         { status: 400 }
       );
     }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const ticket = await Ticket.findById(ticket_id);
     if (!ticket) {
       return NextResponse.json(
-        { error: 'Ticket not found' },
+        { error: 'Ticket not found. Try fetching the tickets first.' },
         { status: 404 }
       );
     }
@@ -43,14 +43,16 @@ export async function POST(request: NextRequest) {
     if (description !== undefined) {
       updateFields.description = description;
       // Update title if description changes
-      updateFields.title = `${ticket.category || category} - ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`;
+      const generateTitle = (desc: string) => {
+        const words = desc.split(' ').slice(0, 8); // First 8 words
+        const title = words.join(' ');
+        return title.length > 50 ? title.substring(0, 47) + '...' : title;
+      };
+      updateFields.title = generateTitle(description);
     }
-    if (category !== undefined) {
-      updateFields.category = category;
-      // Update title if category changes
-      updateFields.title = `${category} - ${ticket.description.substring(0, 50)}${ticket.description.length > 50 ? '...' : ''}`;
+    if (priority !== undefined && ['low', 'medium', 'high', 'urgent'].includes(priority.toLowerCase())) {
+      updateFields.priority = priority.toLowerCase();
     }
-    if (priority !== undefined) updateFields.priority = priority;
     if (status !== undefined) updateFields.status = status;
     
     // Handle department by finding the department by name
@@ -81,7 +83,6 @@ export async function POST(request: NextRequest) {
         trackingNumber: updatedTicket!.trackingNumber,
         title: updatedTicket!.title,
         description: updatedTicket!.description,
-        category: updatedTicket!.category,
         priority: updatedTicket!.priority,
         status: updatedTicket!.status,
         updatedAt: updatedTicket!.updatedAt,

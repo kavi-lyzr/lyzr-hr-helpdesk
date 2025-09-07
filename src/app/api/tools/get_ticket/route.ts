@@ -19,11 +19,12 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     // Get tickets filtered by organization from context
+    // TODO: Add pagination
     const tickets = await Ticket.find({
       organizationId: context.organizationId
     })
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(100)
       .populate('createdBy', 'name email')
       .populate('organizationId', 'name')
       .populate('assignedTo', 'name email');
