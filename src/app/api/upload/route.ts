@@ -8,23 +8,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        // Here you can implement additional authentication/authorization logic
-        // For now, we'll allow uploads but could add user verification
-        
-        // Validate file types and sizes on the server side as well
-        return {
-          allowedContentTypes: [
-            'application/pdf',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain'
-          ],
-          tokenPayload: JSON.stringify({
-            // You can include additional metadata here if needed
-            userId: clientPayload || 'unknown'
-          }),
-        };
-      },
+        onBeforeGenerateToken: async (pathname, clientPayload) => {
+          // Here you can implement additional authentication/authorization logic
+          // For now, we'll allow uploads but could add user verification
+          
+          // Validate file types and sizes on the server side as well
+          return {
+            allowedContentTypes: [
+              'application/pdf',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'text/plain'
+            ],
+            allowOverwrite: true, // Allow overwriting files with the same name
+            tokenPayload: JSON.stringify({
+              // You can include additional metadata here if needed
+              userId: clientPayload || 'unknown'
+            }),
+          };
+        },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
         // This runs after successful upload
         console.log('Blob upload completed:', blob.url);
