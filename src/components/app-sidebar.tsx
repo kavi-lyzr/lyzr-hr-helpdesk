@@ -3,9 +3,22 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, Ticket, Users, FileText, Settings, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
+import { Bot, Ticket, Users, FileText, Settings, LogOut, User } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar
+} from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -57,11 +70,11 @@ const navItems = [
   // },
 ];
 
-export default function AppSidebar() {
+function AppSidebarContent() {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, userId, email } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { state } = useSidebar();
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [userRole, setUserRole] = useState<string>('employee');
 
@@ -104,11 +117,13 @@ export default function AppSidebar() {
     item.roles.includes(userRole)
   );
 
+  const isCollapsed = state === 'collapsed';
+
   return (
-    <aside className={`hidden lg:flex lg:flex-col border-r bg-muted/20 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
-      {/* Header with Logo and Collapse Button */}
-      <div className="h-16 border-b border-border/50 flex items-center px-4 justify-between">
-        {!isCollapsed && (
+    <Sidebar collapsible="icon" variant="sidebar">
+      {/* Header with Logo */}
+      <SidebarHeader className="border-b border-border/50 h-16">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
               src="/lyzr.svg"
@@ -117,80 +132,76 @@ export default function AppSidebar() {
               height={24}
               className="rounded"
             />
-            <div>
-              <h1 className="font-semibold text-sm text-foreground">Lyzr HR</h1>
-              <p className="text-xs text-muted-foreground">Helpdesk</p>
-            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="font-semibold text-sm text-foreground text-ellipsis">Lyzr HR</h1>
+                <p className="text-xs text-muted-foreground text-ellipsis">Helpdesk</p>
+              </div>
+            )}
           </div>
-        )}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8 p-0 hover:bg-primary/10"
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
-      </div>
+          <SidebarTrigger className="h-8 w-8 p-0 hover:bg-primary/10" />
+        </div>
+      </SidebarHeader>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 backdrop-blur-xl">
-        <ul className="space-y-1">
-          {filteredNavItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <li key={item.id}>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filteredNavItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={isCollapsed ? item.label : undefined}
+                      >
+                      {/* className="p-5" */}
                       <Link href={`${item.href}?org=${currentOrg?._id || ''}`}>
-                        <Button
-                          // variant="ghost"
-                          // variant="secondary"
-                          className={`w-full h-9 transition-colors ${
-                            isCollapsed ? 'justify-center px-0' : 'justify-start px-3'
-                          } ${
-                            isActive 
-                              ? 'bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground' 
-                              : 'bg-transparent text-foreground hover:text-foreground hover:bg-primary/10'
-                          }`}
-                        >
-                          <item.icon className={`h-4 w-4 ${!isCollapsed && 'mr-3'}`} />
-                          {!isCollapsed && <span className="text-sm">{item.label}</span>}
-                        </Button>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
                       </Link>
-                    </TooltipTrigger>
-                    {isCollapsed && (
-                      <TooltipContent side="right">
-                        <p>{item.label}</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
       {/* User Menu */}
-      <div className="p-3 border-t border-border/50">
-        {isCollapsed ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full h-10 p-0">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src="" />
-                        <AvatarFallback className="text-xs bg-muted">
-                          {email?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+      <SidebarFooter className="border-t border-border/50">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  tooltip={isCollapsed ? "User Menu" : undefined}
+                  className="w-full justify-start"
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-xs bg-muted">
+                      {email?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {email?.split('@')[0] || 'User'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {currentOrg?.role || 'Member'}
+                      </p>
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {!isCollapsed && (
+                  <>
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium text-foreground">
                         {email?.split('@')[0] || 'User'}
@@ -200,59 +211,26 @@ export default function AppSidebar() {
                       </p>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
-                      <User className="mr-2 h-4 w-4" />
-                      Profile Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>User Menu</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start h-10 px-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="text-xs bg-muted">
-                      {email?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {email?.split('@')[0] || 'User'}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {currentOrg?.role || 'Member'}
-                    </p>
-                  </div>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
-                <User className="mr-2 h-4 w-4" />
-                Profile Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-    </aside>
+                  </>
+                )}
+                <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
+}
+
+export default function AppSidebar() {
+  return <AppSidebarContent />;
 }

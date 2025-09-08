@@ -36,8 +36,13 @@
   --sidebar-foreground: oklch(0.2077 0.0398 265.7549);
   --sidebar-primary: oklch(0.5308 0.2636 281.3504);
   --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.9683 0.0069 247.8956);
+  /* --sidebar-accent: oklch(0.9683 0.0069 247.8956); */
+  --sidebar-accent: oklch(53.244% 0.26337 281.987 / 0.267);
   --sidebar-accent-foreground: oklch(0.2077 0.0398 265.7549);
+  --sidebar-accent-hover: oklch(67.604% 0.13412 292.426 / 0.178);
+  --sidebar-accent-hover-foreground: oklch(0.2077 0.0398 265.7549);
+  --sidebar-accent-active: var(--primary);
+  --sidebar-accent-active-foreground: var(--primary-foreground);
   --sidebar-border: oklch(0.9288 0.0126 255.5078);
   --sidebar-ring: oklch(0.5325 0.2397 288.1280);
   --font-sans: "Switzer", ui-sans-serif, sans-serif, system-ui;
@@ -92,6 +97,10 @@
   --sidebar-primary-foreground: oklch(1.0000 0 0);
   --sidebar-accent: oklch(0.2103 0.0059 285.8852);
   --sidebar-accent-foreground: oklch(0.9842 0.0034 247.8575);
+  --sidebar-accent-hover: oklch(0.2103 0.0059 285.8852);
+  --sidebar-accent-hover-foreground: oklch(0.9842 0.0034 247.8575);
+  --sidebar-accent-active: var(--primary);
+  --sidebar-accent-active-foreground: var(--primary-foreground);
   --sidebar-border: oklch(0.2739 0.0055 286.0326);
   --sidebar-ring: oklch(0.5325 0.2397 288.1280);
   --font-sans: "Switzer", ui-sans-serif, sans-serif, system-ui;
@@ -282,7 +291,7 @@ body.gradient-enabled {
   height: 100vh;
   transition: background 0.8s ease-in-out;
 	background: linear-gradient(-45deg, #603BFC40, #A94FA140, #FF683540, #D3B3E440);
-	animation: gradient 16s ease infinite;
+	animation: gradient 8s ease infinite;
   background-size: 200% 200%;
 }
 
@@ -292,7 +301,7 @@ body.no-gradient-background {
 }
 
 .white-gradient {
-  background: linear-gradient(to bottom, var(--background) 60%, transparent), url('/noise.svg');
+  background: linear-gradient(to bottom, var(--background) 40%, transparent), url('/noise.svg');
 }
 
 @keyframes gradient {
@@ -498,6 +507,50 @@ body {
   }
 }
 
+/* Custom sidebar overrides for active state */
+@layer components {
+  /* Target active sidebar menu buttons with multiple selectors for better coverage */
+  [data-sidebar="menu-button"][data-active="true"],
+  [data-slot="sidebar-menu-button"][data-active="true"],
+  .peer\/menu-button[data-active="true"] {
+    background-color: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    transition: all 0.2s ease-in-out !important;
+  }
+  
+  /* Hover state for active buttons */
+  [data-sidebar="menu-button"][data-active="true"]:hover,
+  [data-slot="sidebar-menu-button"][data-active="true"]:hover,
+  .peer\/menu-button[data-active="true"]:hover {
+    background-color: var(--primary) !important;
+    opacity: 0.8 !important;
+    color: var(--primary-foreground) !important;
+  }
+  
+  /* Add smooth transitions and increase padding for better clickability */
+  [data-sidebar="menu-button"],
+  [data-slot="sidebar-menu-button"],
+  .peer\/menu-button {
+    transition: all 0.2s ease-in-out !important;
+    /* padding: 0.75rem 1rem; */
+    /* padding: 0.75rem 1rem !important; Increased from default p-2 (0.5rem) */
+    /* min-height: 2.5rem !important; */
+  }
+  
+  /* Ensure hover states have smooth transitions */
+  [data-sidebar="menu-button"]:hover,
+  [data-slot="sidebar-menu-button"]:hover,
+  .peer\/menu-button:hover {
+    transition: all 0.2s ease-in-out !important;
+  }
+  
+  /* Override the default sidebar accent for inactive items with lighter hover */
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover {
+    background-color: var(--sidebar-accent-hover) !important;
+    color: var(--sidebar-accent-hover-foreground) !important;
+  }
+}
+
 ::selection {
   @apply bg-primary text-primary-foreground;
-} */
+}

@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface Organization {
   _id: string;
@@ -25,8 +26,11 @@ interface Organization {
 export default function SiteHeader() {
   const { logout, userId, email } = useAuth();
   const router = useRouter();
+  const { state } = useSidebar();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  
+  const isCollapsed = state === 'collapsed';
 
   // Load organizations
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border/50 h-16">
       <div className="h-16 flex items-center justify-between px-4">
         {/* Left Side - Mobile Menu + Logo */}
         <div className="lg:hidden flex items-center gap-3">
@@ -106,7 +110,20 @@ export default function SiteHeader() {
         </div>
 
         {/* Center - Organization Selector */}
-        <div className="flex-1 max-w-xs mx-4">
+        <div className="flex flex-row items-center justify-center mx-4 gap-2">
+          {/* Show Lyzr logo when sidebar is collapsed */}
+          {isCollapsed && (
+            <div className="flex flex-row justify-center items-center gap-2 animate-in slide-in-from-left-2 duration-300">
+              <Image
+                src="/lyzr.png"
+                alt="Lyzr"
+                width={36}
+                height={36}
+                className="rounded w-9 h-9"
+              />
+              {/* <span className="font-semibold text-sm text-foreground">Lyzr HR</span> */}
+            </div>
+          )}
           <Select value={currentOrg?._id || ''} onValueChange={handleOrgChange}>
             <SelectTrigger className="h-9 border-border/50 bg-muted/50">
               <div className="flex items-center gap-2 flex-1 min-w-0">
