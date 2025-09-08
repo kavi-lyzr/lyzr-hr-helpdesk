@@ -385,7 +385,7 @@ export default function AIAssistantPage() {
   return (
     <>
       <GradientManager hasMessages={messages.length > 0} />
-      <div className="flex flex-col h-full relative">
+      <div className="flex flex-col h-full relative items-center justify-center">
         {/* Fixed conversation controls at top */}
         <div className="fixed top-20 right-4 z-30 flex items-center gap-2">
           {/* History dropdown */}
@@ -490,7 +490,7 @@ export default function AIAssistantPage() {
                           dangerouslySetInnerHTML={renderMarkdown(message.content)}
                         />
                       ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap userchatcontent">
                           {message.content}
                         </p>
                       )}
@@ -530,7 +530,7 @@ export default function AIAssistantPage() {
             </div>
 
             {/* Fixed Input Area at Bottom */}
-            <div className="fixed bottom-4 z-20 flex justify-center lg:left-64 left-16 right-0">
+            <div className="fixed bottom-0 z-20 flex justify-center lg:left-64 left-16 right-0 bg-gradient-to-b from-transparent to-background backdrop-blur-sm">
               <div className="w-full max-w-4xl px-4">
                 <ChatInput 
                   onSend={handleSend} 

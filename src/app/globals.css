@@ -281,8 +281,8 @@ body {
 body.gradient-enabled {
   height: 100vh;
   transition: background 0.8s ease-in-out;
-  background: linear-gradient(-45deg, hsl(var(--primary) / 0.03), hsl(var(--accent) / 0.05), hsl(var(--muted) / 0.02), hsl(var(--secondary) / 0.04));
-  animation: gradient 16s ease infinite;
+	background: linear-gradient(-45deg, #603BFC40, #A94FA140, #FF683540, #D3B3E440);
+	animation: gradient 16s ease infinite;
   background-size: 200% 200%;
 }
 
@@ -292,7 +292,7 @@ body.no-gradient-background {
 }
 
 .white-gradient {
-  background: linear-gradient(to bottom, var(--background) 20%, transparent), url('/noise.svg');
+  background: linear-gradient(to bottom, var(--background) 60%, transparent), url('/noise.svg');
 }
 
 @keyframes gradient {
@@ -318,6 +318,10 @@ body.no-gradient-background {
 
 ::selection {
   @apply bg-primary text-primary-foreground;
+}
+
+.userchatcontent::selection {
+  @apply bg-secondary text-secondary-foreground;
 }
 
 

@@ -16,7 +16,8 @@ export const StarterQuestionsList = ({
 }) => {
   return (
     <div className="w-full mt-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto "> */}
+      <div className="flex flex-row flex-wrap gap-3 justify-center">
         {starterQuestions.map((question, index) => (
           <Card
             key={question}

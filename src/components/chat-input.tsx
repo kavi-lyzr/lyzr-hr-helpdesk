@@ -47,9 +47,9 @@ export function ChatInput({
   }, [message]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto rounded-xl">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-end gap-4 p-4 bg-background/90 border border-border/30 rounded-full backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200">
+        <div className="relative flex items-end gap-4 p-4 bg-background border border-border/60 rounded-[32px] backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200">
           <Textarea
             ref={textareaRef}
             value={message}
@@ -73,11 +73,12 @@ export function ChatInput({
             )}
           </Button>
         </div>
-        {message.trim() && (
-          <p className="text-xs text-muted-foreground/60 mt-3 px-4 text-center">
+        <p className={"transition-opacity text-xs text-muted-foreground/60 mt-3 px-4 text-center "+(message.trim() ? "":"opacity-0")}>
             Press Enter to send, Shift+Enter for new line
           </p>
-        )}
+        {/* {message.trim() && (
+          
+        )} */}
       </form>
     </div>
   );
