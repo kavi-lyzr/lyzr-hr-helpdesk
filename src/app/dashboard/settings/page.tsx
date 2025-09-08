@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/AuthProvider";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Building2, Users, Calendar, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ interface OrganizationDetails {
   isCreator: boolean;
 }
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { userId } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -304,5 +304,28 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage your organization settings</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-muted rounded w-1/4"></div>
+              <div className="h-4 bg-muted rounded w-1/2"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
