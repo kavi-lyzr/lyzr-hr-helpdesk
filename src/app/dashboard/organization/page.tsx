@@ -29,10 +29,12 @@ import {
   UserCheck,
   UserX,
   Eye,
-  EyeOff
+  EyeOff,
+  Upload
 } from 'lucide-react';
 import { useOrganization } from "@/hooks/use-organization";
 import { useAuth } from "@/lib/AuthProvider";
+import { BulkUserImport } from "@/components/bulk-user-import";
 
 interface EditUserData {
   id: string;
@@ -99,6 +101,7 @@ function OrganizationPageContent() {
   // State for dialogs
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [showAddDeptDialog, setShowAddDeptDialog] = useState(false);
+  const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<EditUserData | null>(null);
   const [editingDept, setEditingDept] = useState<EditDepartmentData | null>(null);
   
@@ -283,6 +286,36 @@ function OrganizationPageContent() {
     }
   };
 
+  // Handle bulk import
+  const handleBulkImport = async (users: any[]) => {
+    let successCount = 0;
+    let failureCount = 0;
+    const errors: string[] = [];
+
+    for (const user of users) {
+      try {
+        const success = await addUser(
+          user.email,
+          user.role,
+          user.department
+        );
+        if (success) {
+          successCount++;
+        } else {
+          failureCount++;
+          errors.push(`Failed to add ${user.email}`);
+        }
+      } catch (error) {
+        failureCount++;
+        errors.push(`Error adding ${user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    if (failureCount > 0) {
+      throw new Error(`${failureCount} users failed to import. ${errors.join(', ')}`);
+    }
+  };
+
   // Format user name
   const formatUserName = (user: any) => {
     return user?.name || user?.email?.split('@')[0] || 'Unknown User';
@@ -375,7 +408,17 @@ function OrganizationPageContent() {
           {canManageUsers && (
             <Card>
               <CardHeader>
-                <CardTitle>Add New User</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Add New User</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkImportDialog(true)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Bulk Import
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddUser}>
@@ -830,6 +873,16 @@ function OrganizationPageContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk User Import Dialog */}
+      <BulkUserImport
+        isOpen={showBulkImportDialog}
+        onClose={() => setShowBulkImportDialog(false)}
+        onImport={handleBulkImport}
+        departments={departments}
+        isAdmin={isAdmin}
+        isManager={isManager}
+      />
     </div>
   );
 }

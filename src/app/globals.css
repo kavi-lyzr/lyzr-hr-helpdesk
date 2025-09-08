@@ -301,7 +301,7 @@ body.no-gradient-background {
 }
 
 .white-gradient {
-  background: linear-gradient(to bottom, var(--background) 40%, transparent), url('/noise.svg');
+  background: linear-gradient(to bottom, var(--background) 50%, transparent), url('/noise.svg');
 }
 
 @keyframes gradient {

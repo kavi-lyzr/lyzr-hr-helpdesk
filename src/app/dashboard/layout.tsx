@@ -15,7 +15,8 @@ export default function DashboardLayout({
         id="white-gradient" 
         className="white-gradient w-full h-full transition-all duration-300 fixed top-0 left-0 -z-20"
       />
-      <div className="fixed h-full w-full bg-background/10 dark:bg-background/80" />
+      <div className="fixed h-full w-full bg-background/20 dark:bg-background/80" />
+      {/* <div className="fixed h-full w-full bg-gradient-to-r from-background/80 from-20% via-55% via-transparent to-background/80 to-90%" /> */}
       
       <div className="min-h-screen flex relative w-full">
         <AppSidebar />
