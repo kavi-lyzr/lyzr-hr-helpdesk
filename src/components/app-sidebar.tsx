@@ -61,13 +61,13 @@ const navItems = [
     href: '/dashboard/knowledge-base',
     roles: ['manager', 'admin'],
   },
-  // {
-  //   id: 'settings',
-  //   label: 'Settings',
-  //   icon: Settings,
-  //   href: '/dashboard/settings',
-  //   roles: ['admin'],
-  // },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    href: '/dashboard/settings',
+    roles: ['employee', 'resolver', 'manager', 'admin'],
+  },
 ];
 
 function AppSidebarContent() {
