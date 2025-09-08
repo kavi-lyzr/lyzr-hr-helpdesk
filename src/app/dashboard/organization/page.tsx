@@ -149,7 +149,7 @@ function OrganizationPageContent() {
       
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [users, userSearch, roleFilter, statusFilter]);
+  }, [users, userSearch, roleFilter, statusFilter, departments]);
 
   // Filtered departments
   const filteredDepartments = useMemo(() => {
@@ -318,7 +318,17 @@ function OrganizationPageContent() {
 
   // Format user name
   const formatUserName = (user: any) => {
-    return user?.name || user?.email?.split('@')[0] || 'Unknown User';
+    if (user?.name) return user.name;
+    if (user?.email) {
+      const emailPrefix = user.email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      return emailPrefix
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    return 'Unknown User';
   };
 
   // Get role badge variant
@@ -423,7 +433,7 @@ function OrganizationPageContent() {
               <CardContent>
                 <form onSubmit={handleAddUser}>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <div>
+                    <div className="md:col-span-1">
                       <Input
                         type="email"
                         placeholder="user@company.com"
@@ -436,44 +446,50 @@ function OrganizationPageContent() {
                         <p className="text-sm text-destructive mt-1">Please enter a valid email</p>
                       )}
                     </div>
-                    <Select 
-                      value={addUserForm.role} 
-                      onValueChange={(value) => setAddUserForm(prev => ({ ...prev, role: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employee">Employee</SelectItem>
-                        <SelectItem value="resolver">Resolver</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
-                      </SelectContent>
-                    </Select>
-                    <Select 
-                      value={addUserForm.department} 
-                      onValueChange={(value) => setAddUserForm(prev => ({ ...prev, department: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Department (Optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {departments.map(dept => (
-                          <SelectItem key={dept._id} value={dept._id}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button type="submit" disabled={!canAddUser || isAddingUser}>
-                      {isAddingUser ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="mr-2 h-4 w-4" />
-                      )}
-                      Add User
-                    </Button>
+                    <div className="md:col-span-1">
+                      <Select 
+                        value={addUserForm.role} 
+                        onValueChange={(value) => setAddUserForm(prev => ({ ...prev, role: value }))}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employee">Employee</SelectItem>
+                          <SelectItem value="resolver">Resolver</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                      <Select 
+                        value={addUserForm.department} 
+                        onValueChange={(value) => setAddUserForm(prev => ({ ...prev, department: value }))}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Department (Optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {departments.map(dept => (
+                            <SelectItem key={dept._id} value={dept._id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                      <Button type="submit" disabled={!canAddUser || isAddingUser} className="w-full">
+                        {isAddingUser ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="mr-2 h-4 w-4" />
+                        )}
+                        Add User
+                      </Button>
+                    </div>
                   </div>
                 </form>
               </CardContent>
@@ -496,7 +512,7 @@ function OrganizationPageContent() {
                     />
                   </div>
                   <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -508,7 +524,7 @@ function OrganizationPageContent() {
                     </SelectContent>
                   </Select>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -563,7 +579,7 @@ function OrganizationPageContent() {
                             </Avatar>
                             <div>
                               <div className="font-medium">
-                                {user.user?.name || 'Pending'}
+                                {user.user ? formatUserName(user.user) : formatUserName({ email: user.email })}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {user.email}
@@ -577,11 +593,17 @@ function OrganizationPageContent() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.department ? (
-                            departments.find(d => d._id === user.department)?.name || 'Unknown'
-                          ) : (
-                            <span className="text-muted-foreground">No department</span>
-                          )}
+                          {(() => {
+                            const departmentName = user.department ? 
+                              departments.find(d => d._id === user.department)?.name || 'Unknown' : 
+                              'No department';
+                            console.log(`User ${user.email}: department ID ${user.department} -> ${departmentName}`);
+                            return user.department ? (
+                              <span>{departmentName}</span>
+                            ) : (
+                              <span className="text-muted-foreground">No department</span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusBadgeVariant(user.status)}>
@@ -784,7 +806,7 @@ function OrganizationPageContent() {
                     prev ? { ...prev, role: value } : null
                   )}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -803,7 +825,7 @@ function OrganizationPageContent() {
                     prev ? { ...prev, department: value === 'none' ? undefined : value } : null
                   )}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>

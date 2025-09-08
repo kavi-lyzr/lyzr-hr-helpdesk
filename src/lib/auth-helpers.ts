@@ -115,9 +115,11 @@ export async function createOrUpdateUser(lyzrUserData: LyzrUserData): Promise<IU
       return user!;
     }
 
+    const nameFromEmail = lyzrUserData.email.split('@')[0].charAt(0).toUpperCase() + lyzrUserData.email.split('@')[0].slice(1);
+
     // Create new user
     const newUser = new User({
-      name: lyzrUserData.name || 'User',
+      name: lyzrUserData.name || nameFromEmail || 'User',
       email: lyzrUserData.email,
       lyzrUserId: lyzrUserData.id,
       avatar: lyzrUserData.avatar,

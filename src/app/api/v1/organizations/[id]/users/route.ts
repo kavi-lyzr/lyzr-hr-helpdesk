@@ -60,6 +60,7 @@ export async function GET(
       email: orgUser.email,
       role: orgUser.role,
       status: orgUser.status,
+      department: orgUser.department,
       user: orgUser.userId && typeof orgUser.userId === 'object' && '_id' in orgUser.userId ? {
         _id: orgUser.userId._id,
         name: orgUser.userId.name,
@@ -184,6 +185,7 @@ export async function POST(
       email: organizationUser.email,
       role: organizationUser.role,
       status: organizationUser.status,
+      department: organizationUser.department,
       user: organizationUser.userId && typeof organizationUser.userId === 'object' && '_id' in organizationUser.userId ? {
         _id: organizationUser.userId._id,
         name: organizationUser.userId.name,

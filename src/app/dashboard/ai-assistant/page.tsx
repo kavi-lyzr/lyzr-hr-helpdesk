@@ -155,7 +155,7 @@ export default function AIAssistantPage() {
           const data = await response.json();
           
           let currentOrgId = '';
-          let userName = data.user?.name || 'User';
+          let userName = data.user?.name || (data.user?.email ? data.user?.email.split('@')[0] : 'User');
           let userEmail = data.user?.email || '';
 
           // Use organization from URL parameter if available

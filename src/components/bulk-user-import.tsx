@@ -130,6 +130,9 @@ export function BulkUserImport({
     const parsed: ParsedUser[] = [];
     const emailSet = new Set<string>();
     
+    // Debug: Log available departments
+    console.log('Available departments:', departments.map(d => ({ id: d._id, name: d.name })));
+    
     dataRows.forEach((row, index) => {
       const actualRowIndex = startIndex + index + 1; // 1-based for display
       const email = row[0]?.trim().toLowerCase() || '';
@@ -157,6 +160,7 @@ export function BulkUserImport({
       
       // Validate department
       if (department && !departments.find(d => d.name.toLowerCase() === department.toLowerCase())) {
+        console.log(`Department "${department}" not found in:`, departments.map(d => d.name));
         warnings.push(`Department "${department}" not found - will be ignored`);
       }
       
@@ -167,10 +171,13 @@ export function BulkUserImport({
         emailSet.add(email);
       }
       
+      const departmentId = department ? departments.find(d => d.name.toLowerCase() === department.toLowerCase())?._id : undefined;
+      console.log(`User ${email}: department "${department}" -> ID: ${departmentId}`);
+      
       parsed.push({
         email,
         role: role || DEFAULT_ROLE,
-        department: department ? departments.find(d => d.name.toLowerCase() === department.toLowerCase())?._id : undefined,
+        department: departmentId,
         rowIndex: actualRowIndex,
         errors,
         warnings
@@ -232,12 +239,35 @@ export function BulkUserImport({
     setImportProgress(0);
     
     try {
-      await onImport(validationResult.valid);
+      // Process users with progress tracking
+      let successCount = 0;
+      let failureCount = 0;
+      const errors: string[] = [];
+      const totalUsers = validationResult.valid.length;
+      
+      for (let i = 0; i < validationResult.valid.length; i++) {
+        const user = validationResult.valid[i];
+        try {
+          await onImport([user]); // Import one user at a time
+          successCount++;
+        } catch (error) {
+          failureCount++;
+          errors.push(`Failed to import ${user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / totalUsers) * 100);
+        setImportProgress(progress);
+        
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       setStep('complete');
       setImportResults({
-        successful: validationResult.valid.length,
-        failed: 0,
-        errors: []
+        successful: successCount,
+        failed: failureCount,
+        errors
       });
     } catch (error) {
       console.error('Import failed:', error);
