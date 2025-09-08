@@ -66,34 +66,67 @@ export async function GET(request: NextRequest) {
 // POST: Upload and process a new document
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const organizationId = formData.get('organizationId') as string;
-    const userId = formData.get('userId') as string;
-
-    if (!file || !organizationId || !userId) {
+    // Check if request has body
+    const contentType = request.headers.get('content-type');
+    console.log('Content-Type:', contentType);
+    
+    if (!contentType || !contentType.includes('application/json')) {
       return NextResponse.json(
-        { success: false, error: 'File, organization ID, and user ID are required' },
+        { success: false, error: 'Content-Type must be application/json' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+      console.log('Request body:', body);
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+    
+    const { blobUrl, fileName, fileType, fileSize, organizationId, userId } = body;
+
+    if (!blobUrl || !fileName || !fileType || !fileSize || !organizationId || !userId) {
+      return NextResponse.json(
+        { success: false, error: 'All fields (blobUrl, fileName, fileType, fileSize, organizationId, userId) are required' },
         { status: 400 }
       );
     }
 
     // Validate file type
     const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(fileType)) {
       return NextResponse.json(
         { success: false, error: 'Only PDF, DOCX, and TXT files are supported' },
         { status: 400 }
       );
     }
 
-    // Validate file size (10MB)
-    if (file.size > MAX_FILE_SIZE) {
+    // Validate file size (100MB)
+    if (fileSize > MAX_FILE_SIZE) {
       return NextResponse.json(
         { success: false, error: `File size must be less than ${MAX_FILE_SIZE / 1024 / 1024} MB` },
         { status: 400 }
       );
     }
+
+    // Fetch the file from Vercel Blob
+    const fileResponse = await fetch(blobUrl);
+    if (!fileResponse.ok) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch uploaded file' },
+        { status: 400 }
+      );
+    }
+
+    const fileBlob = await fileResponse.blob();
+    // Create a File object from the blob for compatibility with existing code
+    const file = new File([fileBlob], fileName, { type: fileType });
 
     // Validate organizationId format (MongoDB ObjectId)
     if (!mongoose.Types.ObjectId.isValid(organizationId)) {
@@ -133,28 +166,28 @@ export async function POST(request: NextRequest) {
     // Decrypt API key
     const apiKey = decrypt(organization.lyzrApiKey);
 
-    // Determine file type
-    let fileType: 'pdf' | 'docx' | 'txt';
+    // Determine file type and parser
+    let fileTypeEnum: 'pdf' | 'docx' | 'txt';
     let dataParser: string;
     
-    if (file.type === 'application/pdf') {
-      fileType = 'pdf';
+    if (fileType === 'application/pdf') {
+      fileTypeEnum = 'pdf';
       dataParser = 'llmsherpa';
-    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      fileType = 'docx';
+    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      fileTypeEnum = 'docx';
       dataParser = 'docx2txt';
     } else {
-      fileType = 'txt';
+      fileTypeEnum = 'txt';
       dataParser = 'txt_parser';
     }
 
     // Create initial document record in database with processing status
     const knowledgeDocument = new KnowledgeBase({
-      title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-      fileName: file.name,
-      originalFileName: file.name,
-      fileType: fileType,
-      fileSize: file.size,
+      title: fileName.replace(/\.[^/.]+$/, ""), // Remove file extension
+      fileName: fileName,
+      originalFileName: fileName,
+      fileType: fileTypeEnum,
+      fileSize: fileSize,
       organizationId: organizationId,
       uploadedBy: user._id, // Use the MongoDB _id from the user record
       status: 'processing'
@@ -170,16 +203,16 @@ export async function POST(request: NextRequest) {
       parseFormData.append('extra_info', '{}');
 
       // Add additional parameters for PDF parsing (following SvelteKit implementation)
-      if (fileType === 'pdf') {
+      if (fileTypeEnum === 'pdf') {
         parseFormData.append('chunk_size', '1000');
         parseFormData.append('chunk_overlap', '100');
       }
 
       // Parse document based on type
       let parseUrl = '';
-      if (fileType === 'pdf') {
+      if (fileTypeEnum === 'pdf') {
         parseUrl = 'https://rag-prod.studio.lyzr.ai/v3/parse/pdf/';
-      } else if (fileType === 'docx') {
+      } else if (fileTypeEnum === 'docx') {
         parseUrl = 'https://rag-prod.studio.lyzr.ai/v3/parse/docx/';
       } else {
         parseUrl = 'https://rag-prod.studio.lyzr.ai/v3/parse/txt/';

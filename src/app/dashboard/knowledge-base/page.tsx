@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // import { useToast } from "@/hooks/use-toast"; // Will implement custom notifications
 import { useAuth } from "@/lib/AuthProvider";
 import { FileText, Bot, Upload, Search, Trash2, Settings, Loader2, X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { upload } from '@vercel/blob/client';
 
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
@@ -200,17 +201,45 @@ export default function KnowledgeBasePage() {
     setUploadProgress(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('organizationId', userData.currentOrganization);
-      formData.append('userId', userData._id);
+      // Step 1: Upload file to Vercel Blob
+      console.log('Starting Vercel Blob upload for file:', file.name, 'Size:', file.size);
+      const blob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+      console.log('Vercel Blob upload successful:', blob);
 
+      // Step 2: Call API with blob URL for processing
+      const requestBody = {
+        blobUrl: blob.url,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        organizationId: userData.currentOrganization,
+        userId: userData._id
+      };
+      
+      console.log('Sending request body:', requestBody);
+      
       const response = await fetch('/api/v1/knowledge-base', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
       });
 
-      const data = await response.json();
+      console.log('API response status:', response.status);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('API response data:', data);
+      } catch (parseError) {
+        console.error('Failed to parse API response:', parseError);
+        setErrorMessage('Failed to parse server response');
+        return;
+      }
 
       if (data.success) {
         setSuccessMessage('Document uploaded successfully and is being processed!');
@@ -443,7 +472,7 @@ export default function KnowledgeBasePage() {
                       </Button>
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Supported formats: PDF, DOCX, TXT (Max size: 10MB)
+                      Supported formats: PDF, DOCX, TXT (Max size: 100MB)
                     </p>
                   </>
                 )}
