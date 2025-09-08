@@ -360,7 +360,7 @@ function OrganizationPageContent() {
         </Alert>
       )}
 
-      <Tabs defaultValue="users">
+      <Tabs defaultValue="users" className="flex flex-col gap-4">
         <TabsList>
           <TabsTrigger value="users" disabled={!canViewOrganization}>
             <Users className="mr-2 h-4 w-4" /> Users & Roles
@@ -642,7 +642,7 @@ function OrganizationPageContent() {
           )}
 
           {/* Department Search */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 mt-8 mb-6">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

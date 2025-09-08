@@ -6,6 +6,10 @@ import { ChatEmptyState } from "@/components/chat-empty-state";
 import { StarterQuestionsList } from "@/components/starter-questions";
 import { GradientManager } from "@/components/gradient-manager";
 import { useAuth } from "@/lib/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { User, Bot, History, RefreshCw, Plus } from "lucide-react";
+import { marked } from "marked";
 
 interface Message {
   id: string;
@@ -21,50 +25,120 @@ interface UserData {
   email: string;
 }
 
+interface ConversationHistory {
+  sessionId: string;
+  title: string;
+  messages: Message[];
+  lastUpdated: string;
+}
+
 export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<ConversationHistory[]>([]);
   const { userId, isAuthenticated } = useAuth();
 
-  // Load conversation from localStorage
+  // Load conversation history and current session from localStorage
   useEffect(() => {
     if (userData?.currentOrganization) {
-      const storageKey = `chat_session_${userData.currentOrganization}`;
-      const storedSession = localStorage.getItem(storageKey);
-      
-      if (storedSession) {
-        try {
-          const { sessionId: storedSessionId, messages: storedMessages } = JSON.parse(storedSession);
-          setSessionId(storedSessionId);
-          setMessages(storedMessages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          })));
-        } catch (error) {
-          console.error('Error loading stored conversation:', error);
-        }
-      }
+      loadConversationHistory();
+      loadCurrentSession();
     }
   }, [userData?.currentOrganization]);
+
+  const loadConversationHistory = () => {
+    if (!userData?.currentOrganization) return;
+    
+    const historyKey = `chat_history_${userData.currentOrganization}`;
+    const storedHistory = localStorage.getItem(historyKey);
+    
+    if (storedHistory) {
+      try {
+        const history: ConversationHistory[] = JSON.parse(storedHistory);
+        setConversationHistory(history);
+      } catch (error) {
+        console.error('Error loading conversation history:', error);
+      }
+    }
+  };
+
+  const loadCurrentSession = () => {
+    if (!userData?.currentOrganization) return;
+    
+    const storageKey = `chat_session_${userData.currentOrganization}`;
+    const storedSession = localStorage.getItem(storageKey);
+    
+    if (storedSession) {
+      try {
+        const { sessionId: storedSessionId, messages: storedMessages } = JSON.parse(storedSession);
+        setSessionId(storedSessionId);
+        setMessages(storedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
+      } catch (error) {
+        console.error('Error loading stored conversation:', error);
+      }
+    }
+  };
 
   // Save conversation to localStorage whenever messages change
   useEffect(() => {
     if (userData?.currentOrganization && messages.length > 0) {
-      const storageKey = `chat_session_${userData.currentOrganization}`;
-      const sessionData = {
-        sessionId,
-        messages: messages.map(msg => ({
-          ...msg,
-          timestamp: msg.timestamp.toISOString()
-        })),
-        lastUpdated: new Date().toISOString()
-      };
-      
-      localStorage.setItem(storageKey, JSON.stringify(sessionData));
+      saveCurrentSession();
+      saveToHistory();
     }
   }, [messages, sessionId, userData?.currentOrganization]);
+
+  const saveCurrentSession = () => {
+    if (!userData?.currentOrganization || messages.length === 0) return;
+    
+    const storageKey = `chat_session_${userData.currentOrganization}`;
+    const sessionData = {
+      sessionId,
+      messages: messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString()
+      })),
+      lastUpdated: new Date().toISOString()
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(sessionData));
+  };
+
+  const saveToHistory = () => {
+    if (!userData?.currentOrganization || !sessionId || messages.length === 0) return;
+    
+    const title = messages[0]?.content.slice(0, 50) + (messages[0]?.content.length > 50 ? '...' : '');
+    const historyKey = `chat_history_${userData.currentOrganization}`;
+    
+    const currentHistory = [...conversationHistory];
+    const existingIndex = currentHistory.findIndex(conv => conv.sessionId === sessionId);
+    
+    const conversationData: ConversationHistory = {
+      sessionId,
+      title,
+      messages: messages.map(msg => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      })),
+      lastUpdated: new Date().toISOString()
+    };
+    
+    if (existingIndex >= 0) {
+      currentHistory[existingIndex] = conversationData;
+    } else {
+      currentHistory.unshift(conversationData);
+    }
+    
+    // Keep only the last 20 conversations
+    const limitedHistory = currentHistory.slice(0, 20);
+    
+    setConversationHistory(limitedHistory);
+    localStorage.setItem(historyKey, JSON.stringify(limitedHistory));
+  };
 
   // Fetch user data and get current organization from URL
   useEffect(() => {
@@ -133,6 +207,50 @@ export default function AIAssistantPage() {
       console.log('Conversation cleared for organization:', userData.currentOrganization);
     }
   }, [userData?.currentOrganization]);
+
+  // Create new conversation
+  const createNewConversation = useCallback(() => {
+    if (userData?.currentOrganization) {
+      // Save current conversation to history if it has messages
+      if (messages.length > 0 && sessionId) {
+        saveToHistory();
+      }
+      
+      // Clear current session
+      const storageKey = `chat_session_${userData.currentOrganization}`;
+      localStorage.removeItem(storageKey);
+      setMessages([]);
+      setSessionId(null);
+      console.log('New conversation created for organization:', userData.currentOrganization);
+    }
+  }, [userData?.currentOrganization, messages, sessionId]);
+
+  // Load conversation from history
+  const loadConversation = useCallback((conversation: ConversationHistory) => {
+    if (userData?.currentOrganization) {
+      // Save current conversation to history first if it has messages
+      if (messages.length > 0 && sessionId && sessionId !== conversation.sessionId) {
+        saveToHistory();
+      }
+      
+      setSessionId(conversation.sessionId);
+      setMessages(conversation.messages);
+      
+      // Update current session storage
+      const storageKey = `chat_session_${userData.currentOrganization}`;
+      const sessionData = {
+        sessionId: conversation.sessionId,
+        messages: conversation.messages.map(msg => ({
+          ...msg,
+          timestamp: msg.timestamp.toString()
+        })),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(storageKey, JSON.stringify(sessionData));
+      console.log('Loaded conversation:', conversation.title);
+    }
+  }, [userData?.currentOrganization, messages, sessionId]);
 
   // Listen for organization changes in URL (when user switches in header)
   useEffect(() => {
@@ -255,10 +373,74 @@ export default function AIAssistantPage() {
     }
   };
 
+  // Configure marked for safe HTML rendering
+  const renderMarkdown = (content: string) => {
+    const html = marked(content, {
+      breaks: true,
+      gfm: true,
+    });
+    return { __html: html as string };
+  };
+
   return (
     <>
       <GradientManager hasMessages={messages.length > 0} />
-      <div className="flex flex-col h-full min-h-[calc(100vh-8rem)]">
+      <div className="flex flex-col h-full relative">
+        {/* Fixed conversation controls at top */}
+        <div className="fixed top-20 right-4 z-30 flex items-center gap-2">
+          {/* History dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 bg-background/90 backdrop-blur-sm shadow-lg">
+                <History className="h-4 w-4" />
+                History
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 max-h-64 overflow-y-auto">
+              {conversationHistory.length > 0 ? (
+                <>
+                  {conversationHistory.map((conversation) => (
+                    <DropdownMenuItem
+                      key={conversation.sessionId}
+                      onClick={() => loadConversation(conversation)}
+                      className="flex flex-col items-start gap-1 p-3 cursor-pointer"
+                    >
+                      <div className="font-medium text-sm truncate w-full">
+                        {conversation.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(conversation.lastUpdated).toLocaleDateString()}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={createNewConversation}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Conversation
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem disabled className="text-center text-muted-foreground">
+                  No conversations yet
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Refresh button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={createNewConversation}
+            className="gap-2 bg-background/90 backdrop-blur-sm shadow-lg"
+          >
+            <RefreshCw className="h-4 w-4" />
+            New
+          </Button>
+        </div>
         {messages.length === 0 ? (
           <ChatEmptyState>
             <ChatInput 
@@ -269,55 +451,93 @@ export default function AIAssistantPage() {
             <StarterQuestionsList handleSend={handleSend} />
           </ChatEmptyState>
         ) : (
-          <div className="flex flex-col h-full max-w-4xl mx-auto w-full mb-32">
+          <div className="w-full relative pt-10">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
+            <div className="w-full">
+              <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 pb-32">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/60 border border-border/30 backdrop-blur-sm'
+                    key={message.id}
+                    className={`flex gap-4 ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                    <p className="text-xs opacity-60 mt-2">
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted/60 border border-border/30 backdrop-blur-sm rounded-2xl px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    {message.role === 'assistant' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-primary" />
                       </div>
-                      <span className="text-sm text-muted-foreground">AI is thinking...</span>
+                    )}
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/60 border border-border/30 backdrop-blur-sm'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div 
+                          className="prose prose-sm max-w-none dark:prose-invert 
+                                     prose-headings:font-bold prose-headings:text-foreground 
+                                     prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-h4:text-sm
+                                     prose-headings:mt-4 prose-headings:mb-2
+                                     prose-p:text-foreground prose-p:my-2 prose-p:leading-relaxed
+                                     prose-strong:text-foreground prose-strong:font-semibold
+                                     prose-code:text-foreground prose-code:bg-background/80 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                                     prose-pre:bg-background/80 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-lg prose-pre:p-3 prose-pre:my-3
+                                     prose-ul:my-2 prose-ol:my-2 prose-li:my-1
+                                     prose-blockquote:border-l-primary prose-blockquote:bg-background/50 prose-blockquote:my-3
+                                     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                          dangerouslySetInnerHTML={renderMarkdown(message.content)}
+                        />
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {message.content}
+                        </p>
+                      )}
+                      <p className={`text-xs mt-2 ${
+                        message.role === 'user' 
+                          ? 'opacity-60' 
+                          : 'text-muted-foreground'
+                      }`}>
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                    {message.role === 'user' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex gap-4 justify-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="bg-muted/60 border border-border/30 backdrop-blur-sm rounded-2xl px-4 py-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                        <span className="text-sm text-muted-foreground">AI is thinking...</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Input Area */}
-            <div className="border-t border-border/30 p-4 bg-background/50 backdrop-blur-sm fixed w-full max-w-4xl mx-auto flex items-center justify-center bottom-0 px-32">
-              <ChatInput 
-                onSend={handleSend} 
-                isLoading={isLoading}
-                placeholder="Ask a follow-up question..."
-              />
+            {/* Fixed Input Area at Bottom */}
+            <div className="fixed bottom-4 z-20 flex justify-center lg:left-64 left-16 right-0">
+              <div className="w-full max-w-4xl px-4">
+                <ChatInput 
+                  onSend={handleSend} 
+                  isLoading={isLoading}
+                  placeholder="Ask a follow-up question..."
+                />
+              </div>
             </div>
           </div>
         )}

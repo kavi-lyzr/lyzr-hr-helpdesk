@@ -38,40 +38,43 @@ export function ChatInput({
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
+      // Reset height to auto to get accurate scrollHeight
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+      // Set height based on content, with min and max constraints
+      const newHeight = Math.max(24, Math.min(textarea.scrollHeight, 120));
+      textarea.style.height = `${newHeight}px`;
     }
   }, [message]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-end gap-3 p-4 bg-background/80 border border-border/30 rounded-2xl backdrop-blur-sm shadow-lg">
+        <div className="relative flex items-end gap-4 p-4 bg-background/90 border border-border/30 rounded-full backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200">
           <Textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="min-h-[20px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-sm placeholder:text-muted-foreground/60"
-            style={{ height: "20px" }}
+            className="min-h-[24px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-1 px-0 text-sm placeholder:text-muted-foreground/60 leading-relaxed"
+            style={{ height: "24px" }}
             disabled={isLoading}
           />
           <Button
             type="submit"
             size="sm"
             disabled={!message.trim() || isLoading}
-            className="h-8 w-8 p-0 shrink-0 rounded-full"
+            className="h-9 w-9 p-0 shrink-0 rounded-full shadow-md hover:shadow-lg transition-all duration-200"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-3 w-3" />
+              <Send className="h-4 w-4" />
             )}
           </Button>
         </div>
         {message.trim() && (
-          <p className="text-xs text-muted-foreground/60 mt-2 px-1">
+          <p className="text-xs text-muted-foreground/60 mt-3 px-4 text-center">
             Press Enter to send, Shift+Enter for new line
           </p>
         )}
