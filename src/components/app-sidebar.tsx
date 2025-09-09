@@ -20,7 +20,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import Image from "next/image";
@@ -73,29 +73,28 @@ const navItems = [
 function AppSidebarContent() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { logout, userId, email } = useAuth();
   const { state } = useSidebar();
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [userRole, setUserRole] = useState<string>('employee');
 
-  // Load current organization from URL params
+  // Get current org ID from URL parameters
+  const currentOrgId = searchParams.get('org');
+
+  // Load current organization from URL params whenever org ID or user changes
   useEffect(() => {
     const loadCurrentOrg = async () => {
-      if (!userId) return;
+      if (!userId || !currentOrgId) return;
 
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const orgId = urlParams.get('org');
-        
-        if (orgId) {
-          const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
-          if (response.ok) {
-            const data = await response.json();
-            const org = data.organizations.find((o: Organization) => o._id === orgId);
-            if (org) {
-              setCurrentOrg(org);
-              setUserRole(org.role);
-            }
+        const response = await fetch(`/api/v1/user/organizations?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const org = data.organizations.find((o: Organization) => o._id === currentOrgId);
+          if (org) {
+            setCurrentOrg(org);
+            setUserRole(org.role);
           }
         }
       } catch (error) {
@@ -103,10 +102,14 @@ function AppSidebarContent() {
       }
     };
 
-    if (userId) {
+    if (userId && currentOrgId) {
       loadCurrentOrg();
+    } else {
+      // Clear org state if no org ID in URL
+      setCurrentOrg(null);
+      setUserRole('employee');
     }
-  }, [userId]);
+  }, [userId, currentOrgId]);
 
   const handleLogout = async () => {
     await logout();
@@ -158,7 +161,7 @@ function AppSidebarContent() {
                       tooltip={isCollapsed ? item.label : undefined}
                       >
                       {/* className="p-5" */}
-                      <Link href={`${item.href}?org=${currentOrg?._id || ''}`}>
+                      <Link href={`${item.href}?org=${currentOrgId || ''}`}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
                       </Link>
@@ -213,7 +216,7 @@ function AppSidebarContent() {
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrg?._id || ''}`)}>
+                <DropdownMenuItem onClick={() => router.push(`/dashboard/settings?org=${currentOrgId || ''}`)}>
                   <User className="mr-2 h-4 w-4" />
                   Profile Settings
                 </DropdownMenuItem>

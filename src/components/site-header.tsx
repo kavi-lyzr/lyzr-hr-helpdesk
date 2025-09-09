@@ -70,9 +70,12 @@ export default function SiteHeader() {
     const org = organizations.find(o => o._id === orgId);
     if (org) {
       setCurrentOrg(org);
-      // Update URL with org parameter
+      // Update URL with org parameter, preserving the current pathname
       const currentPath = window.location.pathname;
-      router.push(`${currentPath}?org=${orgId}`);
+      // Create URLSearchParams to properly handle query parameters
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('org', orgId);
+      router.push(`${currentPath}?${searchParams.toString()}`);
     }
   };
 
