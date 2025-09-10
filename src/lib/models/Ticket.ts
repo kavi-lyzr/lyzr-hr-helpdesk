@@ -139,6 +139,16 @@ TicketSchema.index({ organizationId: 1, createdBy: 1 });
 TicketSchema.index({ organizationId: 1, assignedTo: 1 });
 TicketSchema.index({ organizationId: 1, department: 1 });
 TicketSchema.index({ createdAt: -1 });
+// Compound index for common filter combinations
+TicketSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
+TicketSchema.index({ organizationId: 1, department: 1, status: 1 });
+// Text index for search functionality
+TicketSchema.index({ 
+  title: 'text', 
+  description: 'text' 
+}, { 
+  weights: { title: 10, description: 5 } 
+});
 
 // Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
 if (mongoose.models.Ticket) {

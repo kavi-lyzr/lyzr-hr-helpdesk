@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
-import { Ticket, TicketMessage } from '@/lib/models';
+import { Ticket, TicketMessage, User } from '@/lib/models';
 import { getUserRoleInOrganization } from '@/lib/organization-helpers';
 
 interface RouteParams {
@@ -18,33 +18,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // First, verify the ticket exists and user has access
+    // Optimize by running user lookup and ticket lookup in parallel
     const { id } = await params;
-    const ticket = await Ticket.findById(id);
+    
+    const [ticket, user] = await Promise.all([
+      Ticket.findById(id).select('organizationId createdBy').lean(),
+      User.findOne({ lyzrUserId: userId }).select('_id email').lean()
+    ]);
+
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Check user's role and access to ticket
-    const organizationId = typeof ticket.organizationId === 'object' && 'name' in ticket.organizationId 
-      ? ticket.organizationId._id.toString() 
-      : ticket.organizationId.toString();
+    const organizationId = ticket.organizationId.toString();
     const userRole = await getUserRoleInOrganization(organizationId, userId);
     if (!userRole) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Get the MongoDB user ID for comparison
-    const { User } = await import('@/lib/models');
-    const user = await User.findOne({ lyzrUserId: userId });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
     // Employees can only view messages for their own tickets
-    const createdById = typeof ticket.createdBy === 'object' && 'name' in ticket.createdBy 
-      ? ticket.createdBy._id.toString() 
-      : ticket.createdBy.toString();
+    const createdById = ticket.createdBy.toString();
     const isTicketOwner = createdById === user._id.toString();
     const canViewAllMessages = userRole === 'admin' || userRole === 'manager' || userRole === 'resolver';
     
@@ -62,7 +60,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const messages = await TicketMessage.find(messageFilter)
       .sort({ createdAt: 1 })
-      .populate('userId', 'name email avatar');
+      .populate('userId', 'name email avatar')
+      .lean(); // Use lean for better performance
 
     return NextResponse.json({
       success: true,

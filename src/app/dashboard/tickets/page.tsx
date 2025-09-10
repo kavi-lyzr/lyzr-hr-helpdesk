@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,10 +115,11 @@ function TicketsPageContent() {
       return;
     }
   }, [orgId, router]);
-  // Fetch tickets data
-  const fetchTickets = async () => {
+  // Memoized fetch tickets function to prevent unnecessary re-renders
+  const fetchTickets = useCallback(async () => {
     if (!orgId || !userId) return;
     
+    setLoading(true);
     try {
       const params = new URLSearchParams({
         organizationId: orgId,
@@ -142,7 +143,7 @@ function TicketsPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId, userId, selectedDepartment, selectedStatus, selectedAssignee, searchTerm]);
 
   // Fetch assignees (for managers/admins)
   const fetchAssignees = async () => {
@@ -160,8 +161,8 @@ function TicketsPageContent() {
     }
   };
 
-  // Fetch ticket messages
-  const fetchTicketMessages = async (ticketId: string) => {
+  // Memoized fetch ticket messages function
+  const fetchTicketMessages = useCallback(async (ticketId: string) => {
     if (!userId) return;
     
     try {
@@ -174,7 +175,7 @@ function TicketsPageContent() {
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  };
+  }, [userId]);
 
   // Add message to ticket
   const addMessage = async () => {
@@ -224,14 +225,28 @@ function TicketsPageContent() {
     }
   };
 
-  // Effect hooks
+  // Debounced search effect
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchTickets();
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      fetchTickets();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, fetchTickets]);
+
+  // Effect for non-search filters (immediate)
   useEffect(() => {
     if (orgId) {
       fetchTickets();
       organizationData.refreshDepartments();
       fetchAssignees();
     }
-  }, [orgId, selectedDepartment, selectedStatus, selectedAssignee, searchTerm]);
+  }, [orgId, selectedDepartment, selectedStatus, selectedAssignee]);
 
   // Handle ticket click
   const handleTicketClick = (ticket: TicketData) => {
@@ -283,7 +298,7 @@ function TicketsPageContent() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
@@ -310,6 +325,15 @@ function TicketsPageContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.in_progress || 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Information</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.pending_information || 0}</div>
           </CardContent>
         </Card>
         <Card>

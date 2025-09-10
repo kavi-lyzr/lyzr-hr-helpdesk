@@ -3,6 +3,10 @@ import dbConnect from '@/lib/database';
 import { createLyzrKnowledgeBase, createLyzrTool, createLyzrAgent, type ToolContext } from '@/lib/lyzr-services';
 import { decrypt } from '@/lib/encryption';
 
+// Simple in-memory cache for user roles (5 minute TTL)
+const roleCache = new Map<string, { role: UserRole | null; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export interface CreateOrganizationData {
   name: string;
   createdBy: string;
@@ -248,14 +252,24 @@ export async function getUserRoleInOrganization(
   organizationId: string,
   userId: string
 ): Promise<UserRole | null> {
+  // Check cache first
+  const cacheKey = `${organizationId}:${userId}`;
+  const cached = roleCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.role;
+  }
+
   await dbConnect();
 
   try {
-    // First, find the user by their Lyzr user ID to get their MongoDB _id
-    // If userId is already a MongoDB ObjectId, this will return null and we'll handle it
+    // Optimize: Run user lookup and organization lookup in parallel
+    const [userByLyzrId, organization] = await Promise.all([
+      User.findOne({ lyzrUserId: userId }).select('_id').lean(),
+      Organization.findById(organizationId).select('createdBy').lean()
+    ]);
+
     let mongoDbUserId: string;
-    
-    const userByLyzrId = await User.findOne({ lyzrUserId: userId });
     if (userByLyzrId) {
       // userId is a Lyzr ID, use the MongoDB _id
       mongoDbUserId = userByLyzrId._id.toString();
@@ -265,18 +279,21 @@ export async function getUserRoleInOrganization(
     }
 
     // First check if user is the creator
-    const organization = await Organization.findById(organizationId);
     if (organization?.createdBy.toString() === mongoDbUserId) {
-      return 'admin';
+      const role = 'admin' as UserRole;
+      roleCache.set(cacheKey, { role, timestamp: Date.now() });
+      return role;
     }
 
     // Then check OrganizationUser table
     const organizationUser = await OrganizationUser.findOne({
       organizationId,
       userId: mongoDbUserId,
-    });
+    }).select('role').lean();
 
-    return organizationUser?.role || null;
+    const role = organizationUser?.role || null;
+    roleCache.set(cacheKey, { role, timestamp: Date.now() });
+    return role;
   } catch (error) {
     console.error('Error checking user role:', error);
     return null;

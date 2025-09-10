@@ -52,44 +52,59 @@ export async function GET(request: NextRequest) {
     if (assignedTo) filter.assignedTo = assignedTo;
     if (createdBy && userRole !== 'employee') filter.createdBy = createdBy;
 
-    // Search filter
+    // Search filter - use text search for better performance
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { trackingNumber: parseInt(search) || 0 }
-      ];
+      const searchNumber = parseInt(search);
+      if (searchNumber && !isNaN(searchNumber)) {
+        // If search is a number, search by tracking number
+        filter.trackingNumber = searchNumber;
+      } else {
+        // Use MongoDB text search for better performance
+        filter.$text = { $search: search };
+      }
     }
 
-    // Get tickets with pagination
+    // Execute main queries in parallel for better performance
     const skip = (page - 1) * limit;
-    const tickets = await Ticket.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate('createdBy', 'name email avatar')
-      .populate('assignedTo', 'name email avatar')
-      .populate('department', 'name')
-      .populate('organizationId', 'name');
-
-    // Get total count for pagination
-    const totalTickets = await Ticket.countDocuments(filter);
-
-    // Get ticket statistics
-    const stats = await Ticket.aggregate([
-      { $match: { organizationId: organizationId, ...(userRole === 'employee' ? { createdBy: user._id } : {}) } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
+    
+    const [tickets, totalTickets] = await Promise.all([
+      // Main tickets query with optimized population
+      Ticket.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('createdBy', 'name email avatar')
+        .populate('assignedTo', 'name email avatar')
+        .populate('department', 'name')
+        .lean(), // Use lean() for better performance since we don't need mongoose documents
+      
+      // Total count for pagination
+      Ticket.countDocuments(filter)
     ]);
 
-    const statusCounts = stats.reduce((acc, stat) => {
-      acc[stat._id] = stat.count;
+    // Calculate statistics from the actual tickets data for accuracy
+    const statusCounts = tickets.reduce((acc: Record<string, number>, ticket: any) => {
+      const status = ticket.status;
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {});
+
+    // If we have filters applied, we need to get all matching tickets for accurate stats
+    if (department || status || priority || assignedTo || search) {
+      // Get all tickets matching the filter for accurate statistics
+      const allMatchingTickets = await Ticket.find(filter).select('status').lean();
+      
+      // Recalculate statistics from all matching tickets
+      const allStatusCounts = allMatchingTickets.reduce((acc: Record<string, number>, ticket: any) => {
+        const status = ticket.status;
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Replace statusCounts with the complete statistics
+      Object.keys(statusCounts).forEach(key => delete statusCounts[key]);
+      Object.assign(statusCounts, allStatusCounts);
+    }
 
     return NextResponse.json({
       success: true,
