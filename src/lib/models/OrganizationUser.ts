@@ -90,6 +90,12 @@ OrganizationUserSchema.index({ organizationId: 1, email: 1 }, { unique: true });
 OrganizationUserSchema.index({ organizationId: 1, userId: 1 });
 OrganizationUserSchema.index({ email: 1 });
 OrganizationUserSchema.index({ inviteToken: 1 });
+// Optimize department user count queries
+OrganizationUserSchema.index({ organizationId: 1, department: 1, status: 1 });
+// Optimize role-based queries
+OrganizationUserSchema.index({ organizationId: 1, role: 1 });
+// Optimize status-based queries
+OrganizationUserSchema.index({ organizationId: 1, status: 1 });
 
 // Clear the model if it exists to avoid schema conflicts and ensure schema changes are applied
 if (mongoose.models.OrganizationUser) {

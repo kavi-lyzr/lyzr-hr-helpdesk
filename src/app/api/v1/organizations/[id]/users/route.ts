@@ -46,13 +46,14 @@ export async function GET(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Get all users in the organization
+    // Get all users in the organization with optimized query
     const organizationUsers = await OrganizationUser.find({
       organizationId: organizationId
     })
     .populate<{ userId: IUser }>('userId', 'name email avatar')
     .populate<{ createdBy: IUser }>('createdBy', 'name email')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean(); // Use lean for better performance
 
     // Format the response
     const users = organizationUsers.map(orgUser => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,24 +137,41 @@ function OrganizationPageContent() {
     addUserForm.role &&
     !(isManager && addUserForm.role === 'admin');
 
-  // Filtered users
+  // Memoized filtered users with optimized filtering
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      const matchesSearch = !userSearch || 
-        user.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-        (user.user?.name || '').toLowerCase().includes(userSearch.toLowerCase());
-      
-      const matchesRole = !roleFilter || roleFilter === '-' || user.role === roleFilter;
-      const matchesStatus = !statusFilter || statusFilter === '-' || user.status === statusFilter;
-      
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [users, userSearch, roleFilter, statusFilter, departments]);
+    if (!userSearch && !roleFilter && !statusFilter) {
+      return users; // Return all users if no filters applied
+    }
 
-  // Filtered departments
+    const searchLower = userSearch.toLowerCase();
+    const roleFilterValue = roleFilter === '-' ? null : roleFilter;
+    const statusFilterValue = statusFilter === '-' ? null : statusFilter;
+
+    return users.filter(user => {
+      // Early return if role or status doesn't match
+      if (roleFilterValue && user.role !== roleFilterValue) return false;
+      if (statusFilterValue && user.status !== statusFilterValue) return false;
+      
+      // Only check search if there's a search term
+      if (userSearch) {
+        const emailMatch = user.email.toLowerCase().includes(searchLower);
+        const nameMatch = user.user?.name?.toLowerCase().includes(searchLower) || false;
+        if (!emailMatch && !nameMatch) return false;
+      }
+      
+      return true;
+    });
+  }, [users, userSearch, roleFilter, statusFilter]);
+
+  // Memoized filtered departments with optimized filtering
   const filteredDepartments = useMemo(() => {
+    if (!deptSearch) {
+      return departments; // Return all departments if no search
+    }
+
+    const searchLower = deptSearch.toLowerCase();
     return departments.filter(dept => 
-      !deptSearch || dept.name.toLowerCase().includes(deptSearch.toLowerCase())
+      dept.name.toLowerCase().includes(searchLower)
     );
   }, [departments, deptSearch]);
 
@@ -316,8 +333,8 @@ function OrganizationPageContent() {
     }
   };
 
-  // Format user name
-  const formatUserName = (user: any) => {
+  // Memoized user name formatter
+  const formatUserName = useCallback((user: any) => {
     if (user?.name) return user.name;
     if (user?.email) {
       const emailPrefix = user.email.split('@')[0];
@@ -329,10 +346,10 @@ function OrganizationPageContent() {
         .join(' ');
     }
     return 'Unknown User';
-  };
+  }, []);
 
-  // Get role badge variant
-  const getRoleBadgeVariant = (role: string) => {
+  // Memoized badge variant functions
+  const getRoleBadgeVariant = useCallback((role: string) => {
     switch (role) {
       case 'admin': return 'destructive';
       case 'manager': return 'default';
@@ -340,17 +357,16 @@ function OrganizationPageContent() {
       case 'employee': return 'outline';
       default: return 'outline';
     }
-  };
+  }, []);
 
-  // Get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = useCallback((status: string) => {
     switch (status) {
       case 'active': return 'default';
       case 'invited': return 'secondary';
       case 'inactive': return 'outline';
       default: return 'outline';
     }
-  };
+  }, []);
 
   if (!orgId) {
     return null;

@@ -46,25 +46,37 @@ export async function GET(
       organizationId: organizationId
     }).sort({ name: 1 });
 
-    // Get user count for each department
-    const departmentsWithCounts = await Promise.all(
-      departments.map(async (dept) => {
-        const userCount = await OrganizationUser.countDocuments({
+    // Get user counts for all departments in a single aggregation query
+    const userCounts = await OrganizationUser.aggregate([
+      {
+        $match: {
           organizationId: organizationId,
-          department: dept._id,
-          status: 'active'
-        });
+          status: 'active',
+          department: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$department',
+          userCount: { $sum: 1 }
+        }
+      }
+    ]);
 
-        return {
-          _id: dept._id,
-          name: dept.name,
-          description: dept.description,
-          userCount,
-          createdAt: dept.createdAt,
-          updatedAt: dept.updatedAt
-        };
-      })
+    // Create a map for quick lookup
+    const userCountMap = new Map(
+      userCounts.map(item => [item._id.toString(), item.userCount])
     );
+
+    // Format departments with user counts
+    const departmentsWithCounts = departments.map(dept => ({
+      _id: dept._id,
+      name: dept.name,
+      description: dept.description,
+      userCount: userCountMap.get(dept._id.toString()) || 0,
+      createdAt: dept.createdAt,
+      updatedAt: dept.updatedAt
+    }));
 
     return NextResponse.json({
       success: true,
