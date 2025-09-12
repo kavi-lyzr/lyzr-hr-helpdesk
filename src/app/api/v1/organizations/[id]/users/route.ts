@@ -41,41 +41,46 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Only admins, managers, and resolvers can view organization users
-    if (!['admin', 'manager', 'resolver'].includes(userRole)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    // All users can access organization data, but with different scopes
+    let users: any[] = [];
+    
+    if (['admin', 'manager', 'resolver'].includes(userRole)) {
+      // Admins, managers, and resolvers can view all organization users
+      const organizationUsers = await OrganizationUser.find({
+        organizationId: organizationId
+      })
+      .populate<{ userId: IUser }>('userId', 'name email avatar')
+      .populate<{ createdBy: IUser }>('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean(); // Use lean for better performance
+
+      // Format the response
+      users = organizationUsers.map(orgUser => ({
+        _id: orgUser._id,
+        email: orgUser.email,
+        role: orgUser.role,
+        status: orgUser.status,
+        department: orgUser.department,
+        user: orgUser.userId && typeof orgUser.userId === 'object' && '_id' in orgUser.userId ? {
+          _id: orgUser.userId._id,
+          name: orgUser.userId.name,
+          email: orgUser.userId.email,
+          avatar: orgUser.userId.avatar
+        } : null,
+        createdBy: orgUser.createdBy && typeof orgUser.createdBy === 'object' && '_id' in orgUser.createdBy ? {
+          name: orgUser.createdBy.name,
+          email: orgUser.createdBy.email
+        } : null,
+        invitedAt: orgUser.invitedAt,
+        joinedAt: orgUser.joinedAt,
+        createdAt: orgUser.createdAt
+      }));
+    } else {
+      // Employees get basic organization info without full user list
+      // This allows them to access the endpoint for role and department info
+      // but doesn't expose sensitive user data they shouldn't see
+      users = [];
     }
-
-    // Get all users in the organization with optimized query
-    const organizationUsers = await OrganizationUser.find({
-      organizationId: organizationId
-    })
-    .populate<{ userId: IUser }>('userId', 'name email avatar')
-    .populate<{ createdBy: IUser }>('createdBy', 'name email')
-    .sort({ createdAt: -1 })
-    .lean(); // Use lean for better performance
-
-    // Format the response
-    const users = organizationUsers.map(orgUser => ({
-      _id: orgUser._id,
-      email: orgUser.email,
-      role: orgUser.role,
-      status: orgUser.status,
-      department: orgUser.department,
-      user: orgUser.userId && typeof orgUser.userId === 'object' && '_id' in orgUser.userId ? {
-        _id: orgUser.userId._id,
-        name: orgUser.userId.name,
-        email: orgUser.userId.email,
-        avatar: orgUser.userId.avatar
-      } : null,
-      createdBy: orgUser.createdBy && typeof orgUser.createdBy === 'object' && '_id' in orgUser.createdBy ? {
-        name: orgUser.createdBy.name,
-        email: orgUser.createdBy.email
-      } : null,
-      invitedAt: orgUser.invitedAt,
-      joinedAt: orgUser.joinedAt,
-      createdAt: orgUser.createdAt
-    }));
 
     return NextResponse.json({
       success: true,
