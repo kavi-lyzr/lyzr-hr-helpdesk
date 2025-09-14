@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
-import { Organization } from '@/lib/models';
+import { Organization, OrganizationUser } from '@/lib/models';
 import { chatWithLyzrAgent } from '@/lib/lyzr-services';
 import { decrypt } from '@/lib/encryption';
 import { getOrganizationDepartments } from '@/lib/organization-helpers';
@@ -63,6 +63,24 @@ export async function POST(request: NextRequest) {
 
     console.log('User found:', { name: user.name, email: user.email, lyzrUserId: user.lyzrUserId });
 
+    // Get the user's OrganizationUser record to get the user_token
+    const organizationUser = await OrganizationUser.findOne({
+      organizationId: organizationId,
+      userId: user._id
+    });
+
+    if (!organizationUser) {
+      console.error('User not found in organization:', { userId, organizationId });
+      return NextResponse.json(
+        { error: 'User not found in this organization' },
+        { status: 404 }
+      );
+    }
+
+    // Generate user_token from OrganizationUser._id
+    const userToken = organizationUser._id.toString();
+    console.log('Generated user token:', userToken);
+
     // Decrypt the API key
     const decryptedApiKey = decrypt(organization.lyzrApiKey);
     console.log('Decrypted API key length:', decryptedApiKey?.length || 0);
@@ -89,7 +107,8 @@ export async function POST(request: NextRequest) {
       prompt: organization.systemInstruction || 'Provide helpful and professional HR assistance.',
       departments: departmentsList,
       datetime: formattedDateTime,
-      user_details: `Name: ${user.name}, Email: ${user.email}, Role: Employee requesting assistance`
+      user_details: `Name: ${user.name}, Email: ${user.email}, Role: ${organizationUser.role} requesting assistance`,
+      user_token: userToken
     };
 
     // Chat with the Lyzr agent

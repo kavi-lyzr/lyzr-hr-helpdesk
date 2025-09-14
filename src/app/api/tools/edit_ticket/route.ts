@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
-import { Ticket, Department } from '@/lib/models';
-import { validateToolToken } from '@/lib/middleware/tool-auth';
+import { Ticket, Department, OrganizationUser } from '@/lib/models';
+import { validateToolToken, validateUserToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +19,29 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { ticket_id, description, priority, department, status } = body;
+    const { ticket_id, description, priority, department, status, user_token } = body;
 
     // Validate required fields
     if (!ticket_id) {
       return NextResponse.json(
         { error: 'Ticket ID is required. Try fetching the tickets first.' },
         { status: 400 }
+      );
+    }
+
+    if (!user_token) {
+      return NextResponse.json(
+        { error: 'User token is required for editing tickets. Please provide a valid user token.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate user token
+    const userTokenValidation = await validateUserToken(user_token, context.organizationId);
+    if (!userTokenValidation.success) {
+      return NextResponse.json(
+        { error: userTokenValidation.error },
+        { status: 401 }
       );
     }
 
@@ -37,6 +53,20 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Check if user has permission to edit this ticket
+    if (userTokenValidation.userRole === 'employee') {
+      // Employees can only edit their own tickets
+      const organizationUser = await OrganizationUser.findById(userTokenValidation.organizationUserId);
+      if (!organizationUser || !organizationUser.userId || 
+          ticket.createdBy.toString() !== organizationUser.userId.toString()) {
+        return NextResponse.json(
+          { error: 'You can only edit your own tickets.' },
+          { status: 403 }
+        );
+      }
+    }
+    // Other roles (resolver, manager, admin) can edit any ticket in the organization
 
     // Update only provided fields
     const updateFields: any = {};

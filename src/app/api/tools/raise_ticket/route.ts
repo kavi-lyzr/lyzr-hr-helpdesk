@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
-import { Ticket, User, Organization, Department } from '@/lib/models';
-import { validateToolToken } from '@/lib/middleware/tool-auth';
+import { Ticket, User, Organization, Department, OrganizationUser } from '@/lib/models';
+import { validateToolToken, validateUserToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { description, priority, department } = body;
+    const { description, priority, department, user_token } = body;
 
-    // Validate required fields - only description is required
+    // Validate required fields
     if (!description) {
       return NextResponse.json(
         { error: 'Description is required for creating a ticket' },
@@ -29,32 +29,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use context from validated token
-    const user = await User.findById(context.userId);
-    const organization = await Organization.findById(context.organizationId);
+    if (!user_token) {
+      return NextResponse.json(
+        { error: 'User token is required for creating a ticket. Please provide a valid user token.' },
+        { status: 400 }
+      );
+    }
 
-    if (!user || !organization) {
+    // Validate user token
+    const userTokenValidation = await validateUserToken(user_token, context.organizationId);
+    if (!userTokenValidation.success) {
+      return NextResponse.json(
+        { error: userTokenValidation.error },
+        { status: 401 }
+      );
+    }
+
+    // Get the actual user from the user token (not the static context)
+    const organizationUser = await OrganizationUser.findById(userTokenValidation.organizationUserId)
+      .populate('userId')
+      .populate('organizationId');
+
+    if (!organizationUser || !organizationUser.userId || !organizationUser.organizationId) {
       return NextResponse.json(
         { error: 'User or organization not found' },
         { status: 404 }
       );
     }
 
+    const user = organizationUser.userId;
+    const organization = organizationUser.organizationId;
+
     // Smart department matching with fuzzy search
     let departmentId = null;
     if (department && department.trim()) {
       const deptName = department.trim();
+      const orgId = typeof organization === 'object' && '_id' in organization 
+        ? organization._id 
+        : organization;
       
       // First try exact match (case-insensitive)
       let foundDepartment = await Department.findOne({
-        organizationId: organization._id,
+        organizationId: orgId,
         name: { $regex: new RegExp(`^${deptName}$`, 'i') }
       });
       
       // If no exact match, try fuzzy matching (contains)
       if (!foundDepartment) {
         foundDepartment = await Department.findOne({
-          organizationId: organization._id,
+          organizationId: orgId,
           name: { $regex: new RegExp(deptName, 'i') }
         });
       }
@@ -62,7 +85,7 @@ export async function POST(request: NextRequest) {
       // If still no match, try reverse fuzzy matching (department name contains input)
       if (!foundDepartment) {
         const allDepartments = await Department.find({
-          organizationId: organization._id
+          organizationId: orgId
         });
         
         foundDepartment = allDepartments.find(dept => 
@@ -87,14 +110,19 @@ export async function POST(request: NextRequest) {
     };
 
     // Create the ticket
+    const userId = typeof user === 'object' && '_id' in user ? user._id.toString() : user.toString();
+    const orgId = typeof organization === 'object' && '_id' in organization 
+      ? organization._id.toString() 
+      : organization.toString();
+    
     const ticket = new Ticket({
       title: generateTitle(description),
       description,
       priority: ticketPriority,
       department: departmentId, // Store the department ObjectId reference (can be null)
       status: 'open',
-      createdBy: user._id,
-      organizationId: organization._id,
+      createdBy: userId,
+      organizationId: orgId,
       assignedTo: [], // Will be assigned later
       tags: departmentId ? [] : [], // No automatic tags for now
     });

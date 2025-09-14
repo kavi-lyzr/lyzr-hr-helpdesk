@@ -24,7 +24,8 @@ export const tools = {
                 "schema": {
                   "type": "object",
                   "required": [
-                    "description"
+                    "description",
+                    "user_token"
                   ],
                   "properties": {
                     "description": {
@@ -38,6 +39,10 @@ export const tools = {
                     "department": {
                       "type": "string",
                       "description": "The department the ticket is for. Optional - can be left empty for unassigned tickets. Use department names like 'IT', 'HR', 'Finance', etc."
+                    },
+                    "user_token": {
+                      "type": "string",
+                      "description": "The user token identifying the current user. This is REQUIRED for all tool calls."
                     }
                   }
                 }
@@ -66,7 +71,8 @@ export const tools = {
                 "schema": {
                   "type": "object",
                   "required": [
-                    "ticket_id"
+                    "ticket_id",
+                    "user_token"
                   ],
                   "properties": {
                     "ticket_id": {
@@ -88,6 +94,10 @@ export const tools = {
                     "status": {
                       "type": "string",
                       "description": "The new status for the ticket. Examples: 'open', 'in_progress', 'closed'."
+                    },
+                    "user_token": {
+                      "type": "string",
+                      "description": "The user token identifying the current user. This is REQUIRED for all tool calls."
                     }
                   }
                 }
@@ -110,8 +120,27 @@ export const tools = {
       "/api/tools/get_ticket": {
         "post": {
           "summary": "Get a list of all support tickets",
-          "description": "Use this tool to fetch a list of all recently created support tickets. This tool does not require any parameters in the request body.",
+          "description": "Use this tool to fetch a list of all recently created support tickets. Requires user_token parameter.",
           "operationId": "getTickets",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "user_token"
+                  ],
+                  "properties": {
+                    "user_token": {
+                      "type": "string",
+                      "description": "The user token identifying the current user. This is REQUIRED for all tool calls."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "responses": {
             "200": {
               "description": "Successfully retrieved tickets."

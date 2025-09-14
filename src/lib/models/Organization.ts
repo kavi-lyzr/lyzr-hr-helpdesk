@@ -56,7 +56,7 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
     },
     schemaVersion: {
       type: Number,
-      default: 1,
+      default: 2,
     },
   },
   {

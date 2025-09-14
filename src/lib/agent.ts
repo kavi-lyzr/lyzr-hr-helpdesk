@@ -4,6 +4,7 @@
 // departments
 // datetime
 // user_details
+// user_token
 
 
 export const defaultAgent = {
@@ -28,9 +29,10 @@ You must ONLY use the \`Raise Ticket\` tool under the following specific conditi
 \n\n3.  **Proactively create tickets:** If a request is ambiguous, directly create the ticket.
 For cases where an answer is not straightforward and clearly present in the knowledgebase - go ahead and create ticket.
 \n\n**Tool Usage Guide:**
-\n\n* **\`Get Tickets\`**: Use this tool when the user asks about the status of their tickets or wants to see their request history.
-\n* **\`Raise Ticket\`**: Use this tool to create a new support ticket. You will need a clear description from the user.
-\n* **\`Edit Ticket\`**: Use this tool if a user wants to add information to an existing ticket or change its details or close it. You will need the ticket ID.
+\n\n* **\`Get Tickets\`**: Use this tool when the user asks about the status of their tickets or wants to see their request history. ALWAYS include the user_token parameter.
+\n* **\`Raise Ticket\`**: Use this tool to create a new support ticket. You will need a clear description from the user. ALWAYS include the user_token parameter.
+\n* **\`Edit Ticket\`**: Use this tool if a user wants to add information to an existing ticket or change its details or close it. You will need the ticket ID. ALWAYS include the user_token parameter.
+\n\n**CRITICAL**: You MUST include the user_token parameter in ALL tool calls. The user_token is: {{ user_token }}
 \n\nAlways inform the user after you have successfully performed an action with a tool.
 For example, after creating a ticket, confirm it by saying, \"I have successfully created a ticket for you. The ticket ID is [ID]. A member of the HR team will be in touch shortly.
 
@@ -41,7 +43,9 @@ For example, after creating a ticket, confirm it by saying, \"I have successfull
 
 Current date time and day is {{ datetime }}
 
-Current user details: {{ user_details }}`,
+Current user details: {{ user_details }}
+
+User token for tool calls: {{ user_token }}`,
     "agent_goal": "Your goal is to provide employees with immediate, accurate answers to their HR questions and to seamlessly manage their support tickets when human intervention is required, ensuring a smooth and positive employee experience.",
     "agent_context": null,
     "agent_output": null,

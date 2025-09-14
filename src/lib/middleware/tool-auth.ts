@@ -1,10 +1,19 @@
 import { NextRequest } from 'next/server';
 import { decrypt } from '@/lib/encryption';
 import { ToolContext } from '@/lib/lyzr-services';
+import { OrganizationUser } from '@/lib/models';
+import dbConnect from '@/lib/database';
 
 export interface ToolAuthResult {
   success: boolean;
   context?: ToolContext;
+  error?: string;
+}
+
+export interface UserTokenResult {
+  success: boolean;
+  organizationUserId?: string;
+  userRole?: string;
   error?: string;
 }
 
@@ -64,6 +73,68 @@ export function validateToolToken(request: NextRequest): ToolAuthResult {
     return {
       success: false,
       error: 'Failed to validate tool authorization.'
+    };
+  }
+}
+
+/**
+ * Validate user_token parameter from tool calls
+ * Returns the OrganizationUser ID and role if valid
+ */
+export async function validateUserToken(
+  userToken: string, 
+  organizationId: string
+): Promise<UserTokenResult> {
+  try {
+    await dbConnect();
+
+    // Validate MongoDB ObjectId format
+    if (!userToken.match(/^[0-9a-fA-F]{24}$/)) {
+      return {
+        success: false,
+        error: 'Invalid user token format. Please provide a valid user token.'
+      };
+    }
+
+    // Find the OrganizationUser record
+    const organizationUser = await OrganizationUser.findById(userToken)
+      .populate('userId', 'name email')
+      .lean();
+
+    if (!organizationUser) {
+      return {
+        success: false,
+        error: 'User token not found. Please provide a valid user token.'
+      };
+    }
+
+    // Verify the user belongs to the correct organization
+    if (organizationUser.organizationId.toString() !== organizationId) {
+      return {
+        success: false,
+        error: 'User token does not belong to this organization. Access denied.'
+      };
+    }
+
+    // Check if user is active
+    if (organizationUser.status !== 'active') {
+      return {
+        success: false,
+        error: 'User account is not active. Please contact your administrator.'
+      };
+    }
+
+    return {
+      success: true,
+      organizationUserId: organizationUser._id.toString(),
+      userRole: organizationUser.role
+    };
+
+  } catch (error) {
+    console.error('Error validating user token:', error);
+    return {
+      success: false,
+      error: 'Failed to validate user token. Please try again.'
     };
   }
 }

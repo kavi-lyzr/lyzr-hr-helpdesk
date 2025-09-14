@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database';
-import { Ticket } from '@/lib/models';
-import { validateToolToken } from '@/lib/middleware/tool-auth';
+import { Ticket, OrganizationUser } from '@/lib/models';
+import { validateToolToken, validateUserToken } from '@/lib/middleware/tool-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,11 +18,40 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Get tickets filtered by organization from context
-    // TODO: Add pagination
-    const tickets = await Ticket.find({
-      organizationId: context.organizationId
-    })
+    const body = await request.json();
+    const { user_token } = body;
+
+    // Validate user token
+    if (!user_token) {
+      return NextResponse.json(
+        { error: 'User token is required for fetching tickets. Please provide a valid user token.' },
+        { status: 400 }
+      );
+    }
+
+    const userTokenValidation = await validateUserToken(user_token, context.organizationId);
+    if (!userTokenValidation.success) {
+      return NextResponse.json(
+        { error: userTokenValidation.error },
+        { status: 401 }
+      );
+    }
+
+    // Build filter based on user role
+    let filter: any = { organizationId: context.organizationId };
+
+    // If user is an employee, only show their own tickets
+    if (userTokenValidation.userRole === 'employee') {
+      // Get the OrganizationUser to find the actual User ID
+      const organizationUser = await OrganizationUser.findById(userTokenValidation.organizationUserId);
+      if (organizationUser && organizationUser.userId) {
+        filter.createdBy = organizationUser.userId;
+      }
+    }
+    // Other roles (resolver, manager, admin) can see all organization tickets
+
+    // Get tickets filtered by organization and user role
+    const tickets = await Ticket.find(filter)
       .sort({ createdAt: -1 })
       .limit(100)
       .populate('createdBy', 'name email')
