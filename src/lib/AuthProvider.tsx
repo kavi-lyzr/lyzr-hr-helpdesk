@@ -128,6 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                     // console.log('userKeys', userKeys);
 
+                    // Extract name from email if userName is not available
+                    const nameFromEmail = email ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1) : 'User';
+
                     // Create or update user in our database
                     const response = await fetch('/api/v1/auth/lyzr', {
                         method: 'POST',
@@ -138,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             lyzrUserData: {
                                 id: tokenData[0].user_id,
                                 email: email,
-                                name: userName || 'User',
+                                name: userName || nameFromEmail,
                                 api_key: tokenData[0].api_key,
                                 organization_id: tokenData[0].organization_id,
                                 usage_id: tokenData[0].usage_id,

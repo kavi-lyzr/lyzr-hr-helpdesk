@@ -26,7 +26,7 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
-  const { isAuthenticated, isLoading, userId, logout } = useAuth();
+  const { isAuthenticated, isLoading, userId, email, logout } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -36,6 +36,13 @@ export default function OrganizationsPage() {
     systemInstruction: ""
   });
   const router = useRouter();
+
+  // Helper function to extract name from email
+  const getNameFromEmail = (email: string | null | undefined): string => {
+    if (!email) return 'User';
+    const name = email.split('@')[0];
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
 
   // Redirect to landing page if not authenticated
   useEffect(() => {
@@ -171,7 +178,7 @@ export default function OrganizationsPage() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="" />
                     <AvatarFallback className="text-xs bg-muted">
-                      {userId?.charAt(0).toUpperCase() || 'U'}
+                      {getNameFromEmail(email).charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <ChevronDown className="h-4 w-4 opacity-50" />
@@ -181,7 +188,7 @@ export default function OrganizationsPage() {
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium">Account</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {userId || 'User'}
+                    {getNameFromEmail(email)}
                   </p>
                 </div>
                 {/* <DropdownMenuSeparator /> */}
@@ -219,7 +226,7 @@ export default function OrganizationsPage() {
                   New organization
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[50%] w-2/3">
+              <DialogContent className="xl:max-w-[30%] w-2/3">
                 <DialogHeader>
                   <DialogTitle className="text-xl">Create New Organization</DialogTitle>
                   <p className="text-sm text-muted-foreground">
@@ -349,77 +356,14 @@ export default function OrganizationsPage() {
                   You haven't joined any organizations yet. Create your first organization to get started with Lyzr HR Helpdesk.
                 </p>
               </div>
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="lg" className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Your First Organization
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                  <DialogHeader>
-                    <DialogTitle className="text-xl">Create New Organization</DialogTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Set up a new organization workspace for your team.
-                    </p>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateOrganization} className="space-y-6 mt-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="org-name-empty" className="text-sm font-medium">
-                        Organization Name *
-                      </Label>
-                      <Input
-                        id="org-name-empty"
-                        placeholder="e.g., Acme Corporation"
-                        value={createForm.name}
-                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                        required
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="system-instruction-empty" className="text-sm font-medium">
-                        AI Assistant Instructions
-                      </Label>
-                      <Textarea
-                        id="system-instruction-empty"
-                        placeholder="Optional: Customize how the AI assistant should behave for this organization..."
-                        value={createForm.systemInstruction}
-                        onChange={(e) => setCreateForm({ ...createForm, systemInstruction: e.target.value })}
-                        rows={4}
-                        className="resize-none"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        You can always change this later in organization settings.
-                      </p>
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setCreateDialogOpen(false)}
-                        disabled={isCreating}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={isCreating || !createForm.name.trim()}
-                        className="min-w-[100px]"
-                      >
-                        {isCreating ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          'Create Organization'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                size="lg" 
+                className="mt-4"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Your First Organization
+              </Button>
             </div>
           )}
         </div>
