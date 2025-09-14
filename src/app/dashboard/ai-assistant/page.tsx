@@ -48,23 +48,30 @@ export default function AIAssistantPage() {
     }
   }, [userData?.currentOrganization]);
 
-  const loadConversationHistory = () => {
+  const loadConversationHistory = useCallback(() => {
     if (!userData?.currentOrganization) return;
     
     const historyKey = `chat_history_${userData.currentOrganization}`;
     const storedHistory = localStorage.getItem(historyKey);
     
+    console.log(`Loading conversation history for org: ${userData.currentOrganization}, key: ${historyKey}`);
+    
     if (storedHistory) {
       try {
         const history: ConversationHistory[] = JSON.parse(storedHistory);
         setConversationHistory(history);
+        console.log(`Loaded ${history.length} conversations for org ${userData.currentOrganization}:`, history.map(h => h.title));
       } catch (error) {
         console.error('Error loading conversation history:', error);
+        setConversationHistory([]);
       }
+    } else {
+      console.log(`No conversation history found for org ${userData.currentOrganization}`);
+      setConversationHistory([]);
     }
-  };
+  }, [userData?.currentOrganization]);
 
-  const loadCurrentSession = () => {
+  const loadCurrentSession = useCallback(() => {
     if (!userData?.currentOrganization) return;
     
     const storageKey = `chat_session_${userData.currentOrganization}`;
@@ -78,11 +85,17 @@ export default function AIAssistantPage() {
           ...msg,
           timestamp: new Date(msg.timestamp)
         })));
+        console.log(`Loaded current session for org ${userData.currentOrganization}:`, storedSessionId);
       } catch (error) {
         console.error('Error loading stored conversation:', error);
+        setMessages([]);
+        setSessionId(null);
       }
+    } else {
+      setMessages([]);
+      setSessionId(null);
     }
-  };
+  }, [userData?.currentOrganization]);
 
   // Save conversation to localStorage whenever messages change
   useEffect(() => {
@@ -92,7 +105,7 @@ export default function AIAssistantPage() {
     }
   }, [messages, sessionId, userData?.currentOrganization]);
 
-  const saveCurrentSession = () => {
+  const saveCurrentSession = useCallback(() => {
     if (!userData?.currentOrganization || messages.length === 0) return;
     
     const storageKey = `chat_session_${userData.currentOrganization}`;
@@ -100,29 +113,33 @@ export default function AIAssistantPage() {
       sessionId,
       messages: messages.map(msg => ({
         ...msg,
-        timestamp: msg.timestamp.toISOString()
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : new Date(msg.timestamp).toISOString()
       })),
       lastUpdated: new Date().toISOString()
     };
     
     localStorage.setItem(storageKey, JSON.stringify(sessionData));
-  };
+    console.log(`Saved current session for org ${userData.currentOrganization}:`, sessionId);
+  }, [userData?.currentOrganization, messages, sessionId]);
 
-  const saveToHistory = () => {
+  const saveToHistory = useCallback(() => {
     if (!userData?.currentOrganization || !sessionId || messages.length === 0) return;
     
     const title = messages[0]?.content.slice(0, 50) + (messages[0]?.content.length > 50 ? '...' : '');
     const historyKey = `chat_history_${userData.currentOrganization}`;
     
-    const currentHistory = [...conversationHistory];
-    const existingIndex = currentHistory.findIndex(conv => conv.sessionId === sessionId);
+    // Load the current organization's history from localStorage to ensure we're working with the right data
+    const storedHistory = localStorage.getItem(historyKey);
+    const currentHistory = storedHistory ? JSON.parse(storedHistory) : [];
+    
+    const existingIndex = currentHistory.findIndex((conv: ConversationHistory) => conv.sessionId === sessionId);
     
     const conversationData: ConversationHistory = {
       sessionId,
       title,
       messages: messages.map(msg => ({
         ...msg,
-        timestamp: new Date(msg.timestamp)
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
       })),
       lastUpdated: new Date().toISOString()
     };
@@ -133,12 +150,11 @@ export default function AIAssistantPage() {
       currentHistory.unshift(conversationData);
     }
     
-    // Keep only the last 20 conversations
-    const limitedHistory = currentHistory.slice(0, 20);
-    
-    setConversationHistory(limitedHistory);
-    localStorage.setItem(historyKey, JSON.stringify(limitedHistory));
-  };
+    // Store all conversations (no limit)
+    setConversationHistory(currentHistory);
+    localStorage.setItem(historyKey, JSON.stringify(currentHistory));
+    console.log(`Saved conversation to history for org ${userData.currentOrganization}:`, sessionId);
+  }, [userData?.currentOrganization, sessionId, messages]);
 
   // Fetch user data and get current organization from URL
   useEffect(() => {
@@ -261,14 +277,25 @@ export default function AIAssistantPage() {
       if (newOrgId && userData && newOrgId !== userData.currentOrganization) {
         console.log('Organization changed via URL, updating AI assistant:', newOrgId);
         
-        // Clear current conversation when switching organizations
-        clearConversation();
+        // Save current conversation before switching
+        if (messages.length > 0 && sessionId) {
+          saveToHistory();
+        }
+        
+        // Clear current conversation and history when switching organizations
+        setMessages([]);
+        setSessionId(null);
+        setConversationHistory([]); // Clear history state first
         
         // Update userData with new organization
         setUserData({
           ...userData,
           currentOrganization: newOrgId
         });
+        
+        // Load conversation history for the new organization
+        loadConversationHistory();
+        loadCurrentSession();
       }
     };
 
@@ -282,7 +309,44 @@ export default function AIAssistantPage() {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('organizationChanged', handleUrlChange);
     };
-  }, [userData, clearConversation]);
+  }, [userData, messages, sessionId, loadConversationHistory, loadCurrentSession, saveToHistory]);
+
+  // Additional effect to detect URL changes via router navigation
+  useEffect(() => {
+    const checkUrlChange = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newOrgId = urlParams.get('org');
+      
+      if (newOrgId && userData && newOrgId !== userData.currentOrganization) {
+        console.log('Organization changed via router navigation, updating AI assistant:', newOrgId);
+        
+        // Save current conversation before switching
+        if (messages.length > 0 && sessionId) {
+          saveToHistory();
+        }
+        
+        // Clear current conversation and history when switching organizations
+        setMessages([]);
+        setSessionId(null);
+        setConversationHistory([]); // Clear history state first
+        
+        // Update userData with new organization
+        setUserData({
+          ...userData,
+          currentOrganization: newOrgId
+        });
+        
+        // Load conversation history for the new organization
+        loadConversationHistory();
+        loadCurrentSession();
+      }
+    };
+
+    // Check for URL changes periodically (as a fallback)
+    const interval = setInterval(checkUrlChange, 1000);
+    
+    return () => clearInterval(interval);
+  }, [userData, messages, sessionId, loadConversationHistory, loadCurrentSession, saveToHistory]);
 
   // Don't render until we have user data
   if (!userData) {
@@ -499,7 +563,10 @@ export default function AIAssistantPage() {
                           ? 'opacity-60' 
                           : 'text-muted-foreground'
                       }`}>
-                        {message.timestamp.toLocaleTimeString()}
+                        {message.timestamp instanceof Date 
+                          ? message.timestamp.toLocaleTimeString()
+                          : new Date(message.timestamp).toLocaleTimeString()
+                        }
                       </p>
                     </div>
                     {message.role === 'user' && (

@@ -15,7 +15,7 @@ export const tools = {
       "/api/tools/raise_ticket": {
         "post": {
           "summary": "Create or raise a new support ticket",
-          "description": "Use this tool to create a new support ticket when a user reports an issue. Only description is required - priority defaults to 'medium' and department can be auto-assigned or left unassigned.",
+          "description": "Use this tool to create a new support ticket when a user reports an issue. Only description & user_token are required - priority defaults to 'medium' and department can be auto-assigned or left unassigned. After creating the ticket let the user know about the tracking number of the ticket (not the id)",
           "operationId": "raiseTicket",
           "requestBody": {
             "required": true,
