@@ -172,7 +172,8 @@ export async function POST(request: NextRequest) {
     
     if (fileType === 'application/pdf') {
       fileTypeEnum = 'pdf';
-      dataParser = 'llmsherpa';
+      // dataParser = 'llmsherpa';
+      dataParser = 'pypdf';
     } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       fileTypeEnum = 'docx';
       dataParser = 'docx2txt';
