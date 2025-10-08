@@ -118,15 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { default: lyzr } = await import('lyzr-agent');
             const tokenData = await lyzr.getKeys() as unknown as TokenData[];
-            // console.log('tokenData', tokenData);
 
             if (tokenData && tokenData[0]) {
                 try {
                     const userKeys = await lyzr.getKeysUser();
                     const email = userKeys?.data?.user?.email;
                     const userName = userKeys?.data?.user?.name;
-
-                    // console.log('userKeys', userKeys);
 
                     // Extract name from email if userName is not available
                     const nameFromEmail = email ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1) : 'User';

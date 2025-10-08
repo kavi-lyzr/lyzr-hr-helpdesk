@@ -186,6 +186,22 @@ export async function createLyzrAgent(
       .replace(/{{TOOL_GET_TICKETS}}/g, getTickets || 'getTickets');
   }
 
+  // Prepare tool configs based on tool IDs and descriptions
+  const toolConfigs = toolIds.map((toolId, index) => {
+    const descriptions = [
+      "call this raise ticket tool when you don't have context to answer user's query",
+      "when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context",
+      "use this tool to get all the tickets in the system"
+    ];
+    
+    return {
+      tool_name: toolId,
+      tool_source: "openapi",
+      action_names: [descriptions[index] || descriptions[0]],
+      persist_auth: false
+    };
+  });
+
   // Prepare the agent configuration based on defaultAgent
   // Keep the placeholders as they will be replaced at runtime via system_prompt_variables
   const agentConfig = {
@@ -223,6 +239,7 @@ export async function createLyzrAgent(
       }
     ],
     tools: toolIds, // Array of tool names (strings)
+    tool_configs: toolConfigs, // Array of tool configurations
   };
 
   console.log('Tool IDs being passed to agent:', toolIds);

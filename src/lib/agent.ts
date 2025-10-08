@@ -93,5 +93,31 @@ User token for tool calls: {{ user_token }}`,
       "openapi-hr_helpdesk-raiseTicket",
       "openapi-hr_helpdesk-editTicket",
       "openapi-hr_helpdesk-getTickets"
+    ],
+    "tool_configs": [
+      {
+        "tool_name": "openapi-hr_helpdesk-raiseTicket",
+        "tool_source": "openapi",
+        "action_names": [
+          "call this raise ticket tool when you don't have context to answer user's query"
+        ],
+        "persist_auth": false
+      },
+      {
+        "tool_name": "openapi-hr_helpdesk-editTicket",
+        "tool_source": "openapi",
+        "action_names": [
+          "when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context"
+        ],
+        "persist_auth": false
+      },
+      {
+        "tool_name": "openapi-hr_helpdesk-getTickets",
+        "tool_source": "openapi",
+        "action_names": [
+          "use this tool to get all the tickets in the system"
+        ],
+        "persist_auth": false
+      }
     ]
   }
