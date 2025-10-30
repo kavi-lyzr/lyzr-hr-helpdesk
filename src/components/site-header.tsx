@@ -2,12 +2,16 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, User, Building, Plus, LogOut, Boxes } from "lucide-react";
+import { Menu, User, Building, Plus, LogOut, Boxes, Github } from "lucide-react";
+import { toast } from "sonner";
 import AppSidebar from "./app-sidebar";
 import { ThemeSwitcher } from "./theme-switcher";
 import { useAuth } from "@/lib/AuthProvider";
@@ -29,6 +33,13 @@ export default function SiteHeader() {
   const { state } = useSidebar();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
+  const [requestEmail, setRequestEmail] = useState<string>("");
+  const [requestMessage, setRequestMessage] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const GITHUB_URL = "https://github.com/kavi-lyzr/lyzr-hr-helpdesk";
+  const APP_SLUG = "hr-helpdesk";
   
   const isCollapsed = state === 'collapsed';
 
@@ -66,6 +77,11 @@ export default function SiteHeader() {
     }
   }, [userId]);
 
+  // Prefill email into request modal when auth state changes
+  useEffect(() => {
+    if (email) setRequestEmail(email);
+  }, [email]);
+
   const handleOrgChange = (orgId: string) => {
     const org = organizations.find(o => o._id === orgId);
     if (org) {
@@ -82,6 +98,36 @@ export default function SiteHeader() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const submitFeatureRequest = async () => {
+    if (!requestEmail || !requestMessage) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/v1/feature-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: requestEmail,
+          message: requestMessage,
+          app: APP_SLUG,
+          pagePath: typeof window !== 'undefined' ? window.location.pathname : undefined,
+          userId: userId || undefined,
+        }),
+      });
+      if (res.ok) {
+        setIsRequestOpen(false);
+        setRequestMessage("");
+        toast.success('Thanks! Your request has been submitted.');
+      } else {
+        toast.error('Something went wrong submitting your request.');
+      }
+    } catch (e) {
+      console.error('Failed to submit feature request', e);
+      toast.error('Failed to submit feature request.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -167,10 +213,69 @@ export default function SiteHeader() {
           </Select>
         </div>
 
-        {/* Right Side - Theme + User */}
+        {/* Right Side - Actions + Theme + User */}
         <div className="flex items-center gap-4">
+          {/* Request Feature */}
+          <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                Request Feature
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Request a feature</DialogTitle>
+                <DialogDescription>
+                  Share what you'd like to see improved, or schedule a <a href="https://www.lyzr.ai/book-demo/" target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80">call</a>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 py-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={requestEmail}
+                    onChange={(e) => setRequestEmail(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Your request</label>
+                  <Textarea
+                    placeholder="Describe the feature or feedback..."
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    className="min-h-28"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsRequestOpen(false)} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button onClick={submitFeatureRequest} disabled={isSubmitting || !requestEmail || !requestMessage}>
+                  {isSubmitting ? 'Submitting…' : 'Submit'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* GitHub Repo */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            asChild
+            disabled={!GITHUB_URL}
+            title="Open GitHub"
+          >
+            <a href={GITHUB_URL || '#'} target="_blank" rel="noreferrer">
+              <Github className="h-4 w-4" />
+            </a>
+          </Button>
+
           <ThemeSwitcher />
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">

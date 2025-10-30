@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, Ticket, Users, FileText, Settings, LogOut, User } from "lucide-react";
+import { Bot, Ticket, Users, FileText, Settings, LogOut, User, Calendar } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   Sidebar,
@@ -173,6 +173,20 @@ function AppSidebarContent() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Actions above user */}
+      <SidebarFooter className="border-t border-border/50">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild className="w-full justify-start">
+              <a href="https://www.lyzr.ai/book-demo/" target="_blank" rel="noreferrer">
+                <Calendar className="h-4 w-4" />
+                <span>Book Demo</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
 
       {/* User Menu */}
       <SidebarFooter className="border-t border-border/50">

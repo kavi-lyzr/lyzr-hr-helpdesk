@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/AuthProvider";
 
 // const geistSans = localFont({
@@ -45,6 +46,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             {children}
+            <Toaster position="top-right" className="top-16 right-4 z-50" />
           </AuthProvider>
         </ThemeProvider>
       </body>
