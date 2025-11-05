@@ -38,7 +38,7 @@ export default function SiteHeader() {
   const [requestMessage, setRequestMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const GITHUB_URL = "https://github.com/kavi-lyzr/lyzr-hr-helpdesk";
+  const GITHUB_URL = "https://www.katamalearning.com/";
   const APP_SLUG = "hr-helpdesk";
   
   const isCollapsed = state === 'collapsed';
@@ -148,29 +148,28 @@ export default function SiteHeader() {
           
           <div className="flex items-center gap-2">
             <Image
-              src="/lyzr.svg"
-              alt="Lyzr"
+              src="/katama-icon.png"
+              alt="Katama Learning"
               width={20}
               height={20}
               className="rounded"
             />
-            <span className="font-semibold text-sm">Lyzr HR</span>
+            <span className="font-semibold text-sm">Katama Learning HR</span>
           </div>
         </div>
 
         {/* Center - Organization Selector */}
         <div className="flex flex-row items-center justify-center mx-4 gap-2">
-          {/* Show Lyzr logo when sidebar is collapsed */}
+          {/* Show Katama Learning logo when sidebar is collapsed */}
           {isCollapsed && (
             <div className="flex flex-row justify-center items-center gap-2 animate-in slide-in-from-left-2 duration-300">
               <Image
-                src="/lyzr.png"
-                alt="Lyzr"
+                src="/katama-icon.png"
+                alt="Katama Learning"
                 width={36}
                 height={36}
                 className="rounded w-9 h-9"
               />
-              {/* <span className="font-semibold text-sm text-foreground">Lyzr HR</span> */}
             </div>
           )}
           <Select value={currentOrg?._id || ''} onValueChange={handleOrgChange}>
@@ -226,7 +225,7 @@ export default function SiteHeader() {
               <DialogHeader>
                 <DialogTitle>Request a feature</DialogTitle>
                 <DialogDescription>
-                  Share what you'd like to see improved, or schedule a <a href="https://www.lyzr.ai/book-demo/" target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80">call</a>
+                  Share what you'd like to see improved, or schedule a <a href="https://www.katamalearning.com/" target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80">call</a>
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 py-2">

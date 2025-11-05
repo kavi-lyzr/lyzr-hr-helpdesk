@@ -17,7 +17,7 @@ import { AuthProvider } from "@/lib/AuthProvider";
 // });
 
 export const metadata: Metadata = {
-  title: "Lyzr HR Helpdesk",
+  title: "Katama Learning HR Helpdesk",
   description: "AI-powered HR helpdesk for multi-organizational support",
 };
 
@@ -30,10 +30,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
           <link
-            href="https://api.fontshare.com/v2/css?f[]=switzer@1,2&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap"
             rel="stylesheet"
           />
-          <link rel="icon" href="/lyzr.png" />
+          <link rel="icon" type="image/png" href="/favicon.png" />
       </head>
       <body>
         {/* className={`${geistSans.variable} ${geistMono.variable} antialiased`}

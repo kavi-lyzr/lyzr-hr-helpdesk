@@ -156,14 +156,14 @@ export default function OrganizationsPage() {
           {/* Logo Section */}
           <div className="flex items-center gap-3">
             <Image
-              src="/lyzr.png"
-              alt="Lyzr"
+              src="/katama-icon.png"
+              alt="Katama Learning"
               width={32}
               height={32}
               className="h-8 w-8"
             />
             <div className="flex flex-col">
-              <span className="font-semibold text-base">Lyzr HR</span>
+              <span className="font-semibold text-base">Katama Learning HR</span>
               <p className="text-xs text-muted-foreground">Helpdesk</p>
               {/* <Badge variant="secondary" className="text-xs font-medium">AI</Badge> */}
             </div>
@@ -353,7 +353,7 @@ export default function OrganizationsPage() {
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold">No organizations found</h3>
                 <p className="text-muted-foreground max-w-md">
-                  You haven't joined any organizations yet. Create your first organization to get started with Lyzr HR Helpdesk.
+                  You haven't joined any organizations yet. Create your first organization to get started with Katama Learning HR Helpdesk.
                 </p>
               </div>
               <Button 

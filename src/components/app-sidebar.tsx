@@ -126,22 +126,30 @@ function AppSidebarContent() {
     <Sidebar collapsible="icon" variant="sidebar">
       {/* Header with Logo */}
       <SidebarHeader className="border-b border-border/50 h-16">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-2 h-full">
+          {isCollapsed ? (
             <Image
-              src="/lyzr.svg"
-              alt="Lyzr"
+              src="/katama-icon.png"
+              alt="Katama Learning"
               width={24}
               height={24}
-              className="rounded"
+              className="object-contain mx-auto"
             />
-            {!isCollapsed && (
-              <div>
-                <h1 className="font-semibold text-sm text-foreground text-ellipsis">Lyzr HR</h1>
-                <p className="text-xs text-muted-foreground text-ellipsis">Helpdesk</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Image
+                src="/katama-icon.png"
+                alt="Katama Learning"
+                width={24}
+                height={24}
+                className="object-contain flex-shrink-0"
+              />
+              <div className="flex flex-col">
+                <h2 className="font-semibold text-sm leading-tight">Katama Learning</h2>
+                <p className="text-[10px] text-muted-foreground leading-tight">HR Helpdesk</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <SidebarTrigger className="h-8 w-8 p-0 hover:bg-primary/10" />
         </div>
       </SidebarHeader>
