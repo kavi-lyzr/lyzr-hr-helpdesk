@@ -15,7 +15,11 @@ async function dbConnect(): Promise<void> {
 
   try {
     // Attempt to connect to the database
+    console.log('Connecting to the database: ', process.env.MONGODB_URI);
+    console.log('app url: ', process.env.NEXT_PUBLIC_APP_URL);
+    console.log('encryption key: ', process.env.ENCRYPTION_KEY);
     const db = await mongoose.connect(process.env.MONGODB_URI || '', {});
+
 
     connection.isConnected = db.connections[0].readyState;
 
