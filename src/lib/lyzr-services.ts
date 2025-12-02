@@ -36,7 +36,7 @@ export async function createLyzrKnowledgeBase(
   const requestData = {
     user_id: apiKey,
     llm_credential_id: 'lyzr_openai', //'lyzr_google',
-    embedding_credential_id: 'yzr_openai', //'lyzr_openai',
+    embedding_credential_id: 'lyzr_openai', //'lyzr_openai',
     vector_db_credential_id: 'lyzr_qdrant',
     description: `HR Helpdesk Knowledge Base for ${organizationName}`,
     collection_name: collectionName,
