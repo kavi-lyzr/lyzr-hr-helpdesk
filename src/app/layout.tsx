@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Noto_Sans, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/AuthProvider";
 
@@ -15,6 +16,19 @@ import { AuthProvider } from "@/lib/AuthProvider";
 //   variable: "--font-geist-mono",
 //   weight: "100 900",
 // });
+
+const noto_sans = Noto_Sans({
+  variable: "--font-noto-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 
 export const metadata: Metadata = {
   title: "Lyzr HR Helpdesk",
@@ -35,9 +49,7 @@ export default function RootLayout({
           />
           <link rel="icon" href="/lyzr.png" />
       </head>
-      <body>
-        {/* className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      > */}
+      <body className={`${noto_sans.variable} ${playfairDisplay.variable} antialiased`}>        
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
