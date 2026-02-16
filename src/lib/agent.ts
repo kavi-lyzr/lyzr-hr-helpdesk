@@ -47,9 +47,6 @@ Current user details: {{ user_details }}
 
 User token for tool calls: {{ user_token }}`,
     "agent_goal": "Your goal is to provide employees with immediate, accurate answers to their HR questions and to seamlessly manage their support tickets when human intervention is required, ensuring a smooth and positive employee experience.",
-    "agent_context": null,
-    "agent_output": null,
-    "examples": null,
     "features": [
       {
         "type": "MEMORY",
@@ -74,21 +71,23 @@ User token for tool calls: {{ user_token }}`,
           "agentic_rag": []
         },
         "priority": 0
-      }
+      },
+      // {
+      //   "type": "TOOL_CALLING",
+      //   "config": {
+      //     "max_tries": 3
+      //   },
+      //   "priority": 0
+      // }
     ],
-    "tool_usage_description": "{\n  \"{{TOOL_RAISE_TICKET}}\": [\n    \"call this raise ticket tool when you don't have context to answer user's query\"\n  ],\n  \"{{TOOL_EDIT_TICKET}}\": [\n    \"when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context\"\n  ],\n  \"{{TOOL_GET_TICKETS}}\": [\n    \"use this tool to get all the tickets in the system\"\n  ]\n}",
     "response_format": {
       "type": "text"
     },
-    "provider_id": "Google",
-    "model": "gemini/gemini-2.5-pro",
+    "provider_id": "OpenAI",
+    "model": "gpt-5-mini",
     "top_p": "0.9",
-    "temperature": "0.5",
-    "managed_agents": [],
-    "version": "3",
-    "created_at": "2025-08-23T20:18:38.124000",
-    "updated_at": "2025-08-28T13:19:37.519000",
-    "llm_credential_id": "lyzr_google",
+    "temperature": "0.5",    
+    "llm_credential_id": "lyzr_openai",
     "tools": [
       "openapi-hr_helpdesk-raiseTicket",
       "openapi-hr_helpdesk-editTicket",
@@ -101,7 +100,10 @@ User token for tool calls: {{ user_token }}`,
         "action_names": [
           "call this raise ticket tool when you don't have context to answer user's query"
         ],
-        "persist_auth": false
+        "persist_auth": true,
+        "server_id": "",
+        "provider_uuid": "",
+        "credential_id": ""
       },
       {
         "tool_name": "openapi-hr_helpdesk-editTicket",
@@ -109,7 +111,10 @@ User token for tool calls: {{ user_token }}`,
         "action_names": [
           "when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context"
         ],
-        "persist_auth": false
+        "persist_auth": true,
+        "server_id": "",
+        "provider_uuid": "",
+        "credential_id": ""
       },
       {
         "tool_name": "openapi-hr_helpdesk-getTickets",
@@ -117,7 +122,10 @@ User token for tool calls: {{ user_token }}`,
         "action_names": [
           "use this tool to get all the tickets in the system"
         ],
-        "persist_auth": false
+        "persist_auth": true,
+        "server_id": "",
+        "provider_uuid": "",
+        "credential_id": ""
       }
     ]
   }

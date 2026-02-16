@@ -43,5 +43,6 @@ next-env.d.ts
 
 # miscellanous
 .legacy/
+.references/
 .vercel
 .env*.local

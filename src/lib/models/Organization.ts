@@ -11,6 +11,8 @@ export interface IOrganization extends Document {
   avatar?: string;
   createdBy: Schema.Types.ObjectId | IUser;
   systemInstruction?: string;
+  agentVersion?: string;
+  toolVersion?: string;
   schemaVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +55,14 @@ const OrganizationSchema: Schema<IOrganization> = new Schema(
       type: String,
       default: 'You are a helpful HR assistant. Provide accurate and professional responses to employee queries.',
       maxlength: [1000, 'System instruction cannot exceed 1000 characters'],
+    },
+    agentVersion: {
+      type: String,
+      default: '0.0.0',
+    },
+    toolVersion: {
+      type: String,
+      default: '0.0.0',
     },
     schemaVersion: {
       type: Number,
