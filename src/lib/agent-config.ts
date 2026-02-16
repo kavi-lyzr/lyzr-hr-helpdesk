@@ -5,8 +5,8 @@
  * On next chat, the agent will be auto-updated in Lyzr Studio.
  */
 
-export const LATEST_AGENT_VERSION = '1.0.4';
-export const LATEST_TOOL_VERSION = '1.0.1';
+export const LATEST_AGENT_VERSION = '1.0.5';
+export const LATEST_TOOL_VERSION = '1.0.5';
 
 /**
  * Returns the full agent config for creating/updating in Lyzr Studio.

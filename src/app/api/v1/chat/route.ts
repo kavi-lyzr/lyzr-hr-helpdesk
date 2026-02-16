@@ -95,21 +95,40 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Agent version check & auto-update ---
-    // Also re-update agent if tools changed (so it picks up new tool IDs)
     const currentAgentVersion = organization.agentVersion || '0.0.0';
-    if ((currentAgentVersion !== LATEST_AGENT_VERSION || toolsUpdated) && organization.lyzrAgentId) {
-      console.log(`Agent version mismatch for org "${organization.name}": ${currentAgentVersion} → ${LATEST_AGENT_VERSION}${toolsUpdated ? ' (tools also updated)' : ''}`);
+
+    if (toolsUpdated) {
+      // Tools changed — must RECREATE agent to properly bind new tools
+      // (PUT update doesn't reliably rebind tools in Lyzr Studio)
+      console.log(`Recreating agent for org "${organization.name}" to bind new tools`);
+      try {
+        const newAgent = await createLyzrAgent(
+          decryptedApiKey,
+          organization.name,
+          organization.lyzrKnowledgeBaseId || '',
+          organization.lyzrToolIds || [],
+          organization.systemInstruction,
+        );
+        organization.lyzrAgentId = newAgent.agent_id;
+        organization.agentVersion = LATEST_AGENT_VERSION;
+        await organization.save();
+        console.log(`Agent recreated with ID ${newAgent.agent_id} (v${LATEST_AGENT_VERSION})`);
+      } catch (createError) {
+        console.error('Failed to recreate agent with new tools:', createError);
+      }
+    } else if (currentAgentVersion !== LATEST_AGENT_VERSION && organization.lyzrAgentId) {
+      // Only agent config changed (no tool changes) — safe to PUT update
+      console.log(`Agent version mismatch for org "${organization.name}": ${currentAgentVersion} → ${LATEST_AGENT_VERSION}`);
       try {
         await updateLyzrAgent(
           decryptedApiKey,
           organization.lyzrAgentId,
           organization.name,
           organization.lyzrKnowledgeBaseId || '',
-          organization.lyzrToolIds || [],
         );
         organization.agentVersion = LATEST_AGENT_VERSION;
         await organization.save();
-        console.log(`Agent updated to version ${LATEST_AGENT_VERSION} for org "${organization.name}"`);
+        console.log(`Agent config updated to v${LATEST_AGENT_VERSION} for org "${organization.name}"`);
       } catch (updateError: any) {
         if (updateError.code === 'AGENT_NOT_FOUND') {
           console.log(`Agent not found, recreating for org "${organization.name}"`);

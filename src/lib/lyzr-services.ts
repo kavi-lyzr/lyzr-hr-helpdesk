@@ -1,4 +1,3 @@
-import { defaultAgent } from './agent';
 import { tools } from './tools';
 import { encrypt } from './encryption';
 import { getAgentConfig, LATEST_TOOL_VERSION } from './agent-config';
@@ -255,14 +254,12 @@ export async function createLyzrAgent(
     };
   });
 
-  // Prepare the agent configuration based on defaultAgent
-  // Keep the placeholders as they will be replaced at runtime via system_prompt_variables
+  // Prepare the agent configuration using the versioned config
+  const versionedConfig = getAgentConfig();
   const agentConfig = {
-    ...defaultAgent,
+    ...versionedConfig,
     name: `HR Helpdesk AI - ${organizationName}`,
     description: `A friendly and efficient AI-powered HR Assistant for ${organizationName}. It answers HR-related questions using a dedicated knowledge base and can manage support tickets`,
-    // Keep the original agent_instructions with placeholders intact
-    agent_instructions: defaultAgent.agent_instructions,
     features: [
       {
         type: "MEMORY",
@@ -421,35 +418,43 @@ export async function chatWithLyzrAgent(
 }
 
 /**
- * Update an existing Lyzr Agent with the latest config.
- * Uses PUT on the single-task template endpoint.
- * Preserves org-specific KB/tools — only updates agent instructions, model, etc.
+ * Update an existing Lyzr Agent's config (instructions, model, etc.) via PUT.
+ * Does NOT touch tools — tool rebinding requires agent recreation.
  */
 export async function updateLyzrAgent(
   apiKey: string,
   agentId: string,
   organizationName: string,
   knowledgeBaseId: string,
-  toolIds: string[],
 ): Promise<void> {
   const agentConfig = getAgentConfig();
 
-  // Build tool configs (same logic as createLyzrAgent)
-  const toolConfigs = toolIds.map((toolId, index) => {
-    const descriptions = [
-      "call this raise ticket tool when you don't have context to answer user's query",
-      "when a user wants to edit one of the tickets they raised, call this tool. requires ticket_id so always call get ticket first unless you already have the ticket_id in context",
-      "use this tool to get all the tickets in the system",
-    ];
-    return {
-      tool_name: toolId,
-      tool_source: 'openapi',
-      action_names: [descriptions[index] || descriptions[0]],
-      persist_auth: false,
-    };
-  });
+  // Fetch current agent to preserve its existing tools
+  let currentAgent: any = null;
+  try {
+    const getResponse = await fetch(
+      `${LYZR_AGENT_BASE_URL}/v3/agents/${agentId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'x-api-key': apiKey,
+        },
+      }
+    );
+    if (getResponse.ok) {
+      currentAgent = await getResponse.json();
+    } else if (getResponse.status === 404) {
+      const error: any = new Error('Agent not found in Lyzr Studio');
+      error.code = 'AGENT_NOT_FOUND';
+      throw error;
+    }
+  } catch (error: any) {
+    if (error.code === 'AGENT_NOT_FOUND') throw error;
+    console.warn('Could not fetch current agent config, proceeding with defaults:', error);
+  }
 
-  const payload = {
+  const payload: any = {
     ...agentConfig,
     name: `HR Helpdesk AI - ${organizationName}`,
     description: `A friendly and efficient AI-powered HR Assistant for ${organizationName}. It answers HR-related questions using a dedicated knowledge base and can manage support tickets`,
@@ -477,12 +482,16 @@ export async function updateLyzrAgent(
         priority: 0,
       },
     ],
-    tools: toolIds,
-    tool_configs: toolConfigs,
     store_messages: true,
   };
 
-  console.log(`Updating agent ${agentId} for org "${organizationName}"`);
+  // Preserve existing tools from the current agent (don't touch tool bindings via PUT)
+  if (currentAgent) {
+    if (currentAgent.tools) payload.tools = currentAgent.tools;
+    if (currentAgent.tool_configs) payload.tool_configs = currentAgent.tool_configs;
+  }
+
+  console.log(`Updating agent ${agentId} config for org "${organizationName}" (preserving tools)`);
 
   const response = await fetch(
     `${LYZR_AGENT_BASE_URL}/v3/agents/template/single-task/${agentId}`,
@@ -507,5 +516,5 @@ export async function updateLyzrAgent(
     throw new Error(`Failed to update agent: ${response.status} ${errorText}`);
   }
 
-  console.log(`Agent ${agentId} updated successfully`);
+  console.log(`Agent ${agentId} config updated successfully`);
 }
