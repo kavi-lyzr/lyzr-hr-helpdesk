@@ -7,3 +7,5 @@ export { default as Ticket, type ITicket, type TicketStatus, type TicketPriority
 export { default as TicketMessage, type ITicketMessage, type MessageRole } from './TicketMessage';
 export { default as KnowledgeBase, type IKnowledgeBase, type FileType } from './KnowledgeBase';
 export { default as FeatureRequest, type IFeatureRequest, type FeatureRequestStatus } from './FeatureRequest';
+export { default as Conversation, type IConversation } from './Conversation';
+export { default as Message, type IMessage, type ChatMessageRole } from './Message';
